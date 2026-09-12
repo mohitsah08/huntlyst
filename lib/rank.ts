@@ -5,7 +5,7 @@
  * and ranks companies by confidence score.
  */
 
-import { CompanyRecord, ValidatedCompany, EmailVerificationResult } from './types';
+import { CompanyRecord, ValidatedCompany, EmailVerificationResult, HuntConfig, TVB_EVALUATION_CONFIG } from './types';
 import { extractDomain } from './discovery';
 
 const REQUIRED_FIELD_COUNT = 8;
@@ -31,7 +31,10 @@ function computeConfidenceScore(record: CompanyRecord): number {
 /**
  * Compute evidence-based Hunt Score (0-100) and dimensional breakdown
  */
-export function calculateHuntScore(record: Partial<CompanyRecord>): {
+export function calculateHuntScore(
+  record: Partial<CompanyRecord>,
+  config: HuntConfig = TVB_EVALUATION_CONFIG
+): {
   score: number;
   breakdown: {
     funding: number;
@@ -77,7 +80,17 @@ export function calculateHuntScore(record: Partial<CompanyRecord>): {
   }
 
   // 3. Geographic fit (max 20)
-  if (record.usPresence === true) {
+  const targetCountries = (config.geography.countries || []).map(c => c.toLowerCase());
+  const targetRegions = (config.geography.regions || []).map(r => r.toLowerCase());
+  const country = (record.country || '').toLowerCase();
+
+  if (targetCountries.length > 0) {
+    if (targetCountries.includes(country)) {
+      breakdown.geography = 20;
+    } else {
+      breakdown.geography = 14;
+    }
+  } else if (record.usPresence === true) {
     breakdown.geography = 20;
   } else if (record.country && !record.country.toLowerCase().includes('united states')) {
     breakdown.geography = 18;
@@ -99,33 +112,36 @@ export function calculateHuntScore(record: Partial<CompanyRecord>): {
   if (record.emailVerified && (record.founderOrCeoEmail || record.email?.address)) {
     breakdown.contact = 20;
   } else if (record.founderOrCeoEmail || record.email?.address) {
-    breakdown.contact = 12;
+    breakdown.contact = config.emailVerification === 'none' ? 20 : 12;
   } else {
-    breakdown.contact = 0;
+    breakdown.contact = config.emailVerification === 'none' ? 18 : 0;
   }
 
-  const score = breakdown.funding + breakdown.technology + breakdown.geography + breakdown.founder + breakdown.contact;
+  const score = Math.min(
+    100,
+    breakdown.funding + breakdown.technology + breakdown.geography + breakdown.founder + breakdown.contact
+  );
 
   return { score, breakdown };
 }
 
 /**
- * Deduplicate companies by root domain
- * Keeps the one with the highest confidence score
+ * Deduplicate company records by root domain
  */
-function deduplicateByDomain(companies: CompanyRecord[]): CompanyRecord[] {
-  const domainMap = new Map<string, CompanyRecord>();
+export function deduplicateByDomain(companies: CompanyRecord[]): CompanyRecord[] {
+  const seen = new Map<string, CompanyRecord>();
 
   for (const company of companies) {
     const domain = extractDomain(company.website);
-    const existing = domainMap.get(domain);
+    if (!domain) continue;
 
+    const existing = seen.get(domain);
     if (!existing || (company.huntScore || 0) > (existing.huntScore || 0)) {
-      domainMap.set(domain, company);
+      seen.set(domain, company);
     }
   }
 
-  return Array.from(domainMap.values());
+  return Array.from(seen.values());
 }
 
 /**
@@ -140,7 +156,8 @@ function sortByConfidence(companies: CompanyRecord[]): CompanyRecord[] {
  */
 export function buildCompanyRecord(
   validated: ValidatedCompany,
-  emailResult: EmailVerificationResult
+  emailResult: EmailVerificationResult,
+  config: HuntConfig = TVB_EVALUATION_CONFIG
 ): CompanyRecord {
   const record: CompanyRecord = {
     name: validated.name,
@@ -148,7 +165,7 @@ export function buildCompanyRecord(
     description: validated.description,
     industry: validated.industry,
     fundingOrRevenue: validated.fundingOrRevenueText,
-    usPresence: true, // Non-US confirmed
+    usPresence: config.geography.usPresence !== 'any',
     founderOrCeoName: validated.founderOrCeoName,
     founderOrCeoEmail: emailResult.email,
     emailVerified: emailResult.verified,
@@ -158,17 +175,19 @@ export function buildCompanyRecord(
     headquarters: validated.headquarters,
     auditDetails: {
       fundingStatus: `Verified: ${validated.fundingOrRevenueText || 'In Range'}`,
-      locationStatus: `Non-US Confirmed: ${validated.usPresenceEvidence || 'Verified'}`,
+      locationStatus: `Geography: ${validated.country || 'Verified'}`,
       techStatus: `Qualified: ${validated.industry || 'Tech Platform'}`,
       emailStatus: emailResult.verified
         ? `Deliverable via MX ${emailResult.mxHost || 'verified'}`
-        : 'Unverified',
+        : emailResult.email
+        ? 'Pattern Generated'
+        : 'Not Found',
       rawEvidence: validated.usPresenceEvidence || undefined,
     },
   };
 
   record.confidenceScore = computeConfidenceScore(record);
-  const { score, breakdown } = calculateHuntScore(record);
+  const { score, breakdown } = calculateHuntScore(record, config);
   record.huntScore = score;
   record.scoreBreakdown = breakdown;
   return record;
@@ -179,16 +198,21 @@ export function buildCompanyRecord(
  */
 export function rankCompanies(
   validatedCompanies: ValidatedCompany[],
-  emailResults: Map<string, EmailVerificationResult>
+  emailResults: Map<string, EmailVerificationResult>,
+  config: HuntConfig = TVB_EVALUATION_CONFIG
 ): CompanyRecord[] {
   const records: CompanyRecord[] = [];
 
   for (const validated of validatedCompanies) {
     const emailResult = emailResults.get(validated.website) || { email: null, verified: false };
-    const record = buildCompanyRecord(validated, emailResult);
+    const record = buildCompanyRecord(validated, emailResult, config);
 
-    // Only include if email was verified (Master Rule #3)
-    if (record.emailVerified) {
+    // Email verification filter according to config
+    if (config.emailVerification === 'required') {
+      if (record.emailVerified) {
+        records.push(record);
+      }
+    } else {
       records.push(record);
     }
   }

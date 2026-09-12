@@ -7,6 +7,8 @@ import {
   PipelineStreamEvent,
   RunHistoryItem,
   SettingsConfig,
+  HuntConfig,
+  TVB_EVALUATION_CONFIG,
 } from '@/lib/types';
 import { loadSettings } from '@/lib/settings';
 import { calculateHuntScore } from '@/lib/rank';
@@ -228,13 +230,16 @@ export default function HomePage() {
   };
 
   // Start Real Discovery Pipeline (Section 8)
-  const handleStartHunt = async (params?: {
-    targetLeads?: number;
-    sectors?: string[];
-    depth?: 'fast' | 'standard' | 'deep';
-  }) => {
+  const handleStartHunt = async (huntConfig?: HuntConfig) => {
     setStatus('running');
-    setStatusMessage('Scanning newly discovered sources...');
+    const activeCfg = huntConfig || TVB_EVALUATION_CONFIG;
+    const targetDisplay = activeCfg.geography.countries.length > 0
+      ? activeCfg.geography.countries.join(', ')
+      : activeCfg.geography.regions.length > 0
+      ? activeCfg.geography.regions.join(', ')
+      : 'Global Non-US';
+
+    setStatusMessage(`Initializing hunt: ${targetDisplay} (${activeCfg.targetLeads} leads)...`);
     setLogs([]);
     setCurrentProgressIndex(1);
 
@@ -243,7 +248,11 @@ export default function HomePage() {
     try {
       const response = await fetch('/api/run-agent?stream=true', {
         method: 'POST',
-        headers: { Accept: 'text/event-stream' },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(activeCfg),
       });
 
       if (!response.ok) {
@@ -303,7 +312,7 @@ export default function HomePage() {
               const newRun: RunHistoryItem = {
                 id: `hunt-${Date.now().toString(36)}`,
                 timestamp: nowIso,
-                requestedCount: params?.targetLeads || settings.agent.targetLeadsCount || 15,
+                requestedCount: activeCfg.targetLeads || settings.agent.targetLeadsCount || 15,
                 discoveredCount: event.result.stats?.discovered || event.result.totalDiscovered || 60,
                 extractedCount: event.result.stats?.extracted || 40,
                 qualifiedCount: event.result.companies.length,
@@ -314,7 +323,7 @@ export default function HomePage() {
                 ).length,
                 durationSeconds: Math.round((event.result.stats?.durationMs || 3000) / 1000),
                 status: 'Completed',
-                sector: params?.sectors?.join(', ') || selectedSector,
+                sector: activeCfg.sectors.join(', ') || selectedSector,
                 companies: event.result.companies,
               };
 
@@ -1079,6 +1088,21 @@ export default function HomePage() {
                           {availableSectors.map((s) => (
                             <option key={s} value={s}>
                               {s}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+
+                      {availableCountries.length > 0 && (
+                        <select
+                          value={selectedCountry}
+                          onChange={(e) => setSelectedCountry(e.target.value)}
+                          className="px-3 py-2 rounded-xl border border-[#D9D0C1] bg-[#FAF6EE] text-xs font-bold text-[#1E1B18] outline-none"
+                        >
+                          <option value="ALL">All Countries</option>
+                          {availableCountries.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
                             </option>
                           ))}
                         </select>

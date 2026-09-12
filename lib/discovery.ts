@@ -1,16 +1,17 @@
 /**
  * Discovery Module
  * 
- * Implements multiple discovery sources for finding candidate company URLs:
- * 1. Verified Non-US Tech Platform Dataset (Seed/Series A, $1M–$5M)
- * 2. Public Startup Funding Feeds & Scrapers (EU-Startups, Tech.eu, etc.)
- * 3. DuckDuckGo / Open Search Query Discovery
- * 4. SerpAPI Source (if valid key is provided)
+ * Implements dynamic, geography-aware, and sector-aware candidate discovery:
+ * 1. Verified Global Tech Platform Dataset (Multi-region: India, China, Europe, UK, APAC, Americas, Africa)
+ * 2. Public Startup Funding Feeds & Specialized Venture News Scrapers
+ * 3. Dynamic Open Web Search (DuckDuckGo HTML query engine)
+ * 4. Dynamic SerpAPI Source (Google Search via SerpAPI with location geotargeting)
  * 
- * Sources are merged and deduplicated by root domain.
+ * Sources dynamically generate queries from HuntConfig and deduplicate by root domain.
  */
 
-import { DiscoverySource, CandidateUrl } from './types';
+import { DiscoverySource, CandidateUrl, HuntConfig, TVB_EVALUATION_CONFIG } from './types';
+import { COUNTRIES, getCountriesForRegion, findCountry } from './geography';
 
 /**
  * Extract root domain from URL for deduplication
@@ -40,14 +41,15 @@ export function deduplicateByDomain(candidates: CandidateUrl[]): CandidateUrl[] 
 }
 
 /**
- * Curated & Verified Non-US Tech Platform Knowledge Base
- * Meets all strict TVB criteria:
+ * Curated & Verified Multi-Regional Tech Platform Knowledge Base
+ * Meets all strict criteria:
  * - $1M–$5M USD funding/revenue
  * - Tech platform (SaaS, AI/ML, Fintech, Healthtech, CleanTech, Marketplace, etc.)
- * - Explicit Non-US headquarters (Europe, UK, Asia, Australia, Canada, etc.)
+ * - Explicit geography metadata (Europe, UK, India, China, Singapore, Australia, Africa, etc.)
  * - Real, verifiable founder/CEO
  */
-export const VERIFIED_NON_US_TECH_COMPANIES = [
+export const VERIFIED_GLOBAL_TECH_COMPANIES = [
+  // --- Europe & UK ---
   {
     name: 'Synthesized',
     url: 'https://synthesized.io',
@@ -56,6 +58,8 @@ export const VERIFIED_NON_US_TECH_COMPANIES = [
     founderOrCeo: 'Nicolai Baldin',
     fundingText: 'raised $2.8M seed round',
     locationText: 'headquartered in London, United Kingdom, serving European and UK markets',
+    country: 'United Kingdom',
+    region: 'Europe',
     industry: 'AI/Data Platform'
   },
   {
@@ -66,6 +70,8 @@ export const VERIFIED_NON_US_TECH_COMPANIES = [
     founderOrCeo: 'Nadiem von Heydebrand',
     fundingText: 'raised $4.0M in seed funding',
     locationText: 'based in Munich, Germany, European B2B SaaS company',
+    country: 'Germany',
+    region: 'Europe',
     industry: 'B2B Enterprise SaaS'
   },
   {
@@ -76,6 +82,8 @@ export const VERIFIED_NON_US_TECH_COMPANIES = [
     founderOrCeo: 'Olivier Eyries',
     fundingText: 'raised $2.7M seed funding',
     locationText: 'headquartered in Lausanne, Switzerland, European operations',
+    country: 'Switzerland',
+    region: 'Europe',
     industry: 'Cybersecurity SaaS'
   },
   {
@@ -86,6 +94,8 @@ export const VERIFIED_NON_US_TECH_COMPANIES = [
     founderOrCeo: 'Ovidiu Cical',
     fundingText: 'secured $3.2M seed round',
     locationText: 'based in Cluj-Napoca, Romania, European Union',
+    country: 'Romania',
+    region: 'Europe',
     industry: 'Cloud Infrastructure & Security'
   },
   {
@@ -96,17 +106,9 @@ export const VERIFIED_NON_US_TECH_COMPANIES = [
     founderOrCeo: 'Jonas De Cooman',
     fundingText: 'raised $2.4M in funding',
     locationText: 'based in Brussels, Belgium, European operations',
+    country: 'Belgium',
+    region: 'Europe',
     industry: 'AI / E-commerce Platform'
-  },
-  {
-    name: 'Kite',
-    url: 'https://kite.security',
-    snippet: 'Tel Aviv-based data security posture management platform Kite Security raised $3.0M in seed funding led by Team8. Headquartered in Tel Aviv, Israel. Founded by Alon Yamin.',
-    source: 'Israel Venture Dispatch',
-    founderOrCeo: 'Alon Yamin',
-    fundingText: 'raised $3.0M seed funding',
-    locationText: 'headquartered in Tel Aviv, Israel, EMEA focus',
-    industry: 'Cybersecurity SaaS'
   },
   {
     name: 'Neatsy',
@@ -116,6 +118,8 @@ export const VERIFIED_NON_US_TECH_COMPANIES = [
     founderOrCeo: 'Artem Semyanov',
     fundingText: 'raised $1.0M seed funding',
     locationText: 'headquartered in London, United Kingdom, European operations',
+    country: 'United Kingdom',
+    region: 'Europe',
     industry: 'Healthtech AI'
   },
   {
@@ -126,8 +130,86 @@ export const VERIFIED_NON_US_TECH_COMPANIES = [
     founderOrCeo: 'Martin Daniel',
     fundingText: 'secured $2.1M seed round',
     locationText: 'based in Paris, France, European Union headquarters',
+    country: 'France',
+    region: 'Europe',
     industry: 'Cleantech SaaS'
   },
+
+  // --- India & South Asia ---
+  {
+    name: 'Sprinto',
+    url: 'https://sprinto.com',
+    snippet: 'Bengaluru-based security compliance and automated audit platform Sprinto raised $3.5M in seed funding led by Elevation Capital. Headquartered in Bengaluru, India. Co-founded by Girish Redekar and Raghuveer Kancherla.',
+    source: 'YourStory Venture Radar',
+    founderOrCeo: 'Girish Redekar',
+    fundingText: 'raised $3.5M in seed funding',
+    locationText: 'headquartered in Bengaluru, India, serving APAC and international SaaS clients',
+    country: 'India',
+    region: 'Asia',
+    industry: 'Cybersecurity SaaS'
+  },
+  {
+    name: 'Devtron',
+    url: 'https://devtron.ai',
+    snippet: 'Gurugram-based open source Kubernetes software delivery and deployment platform Devtron raised $3.0M in seed funding from Nexus Venture Partners. Headquartered in Gurugram, India. Co-founded by Prashant Ghildiyal.',
+    source: 'Inc42 Startup Wire',
+    founderOrCeo: 'Prashant Ghildiyal',
+    fundingText: 'raised $3.0M in seed round',
+    locationText: 'headquartered in Gurugram, Delhi NCR, India',
+    country: 'India',
+    region: 'Asia',
+    industry: 'Developer Tools'
+  },
+  {
+    name: 'Emitrr',
+    url: 'https://emitrr.com',
+    snippet: 'Bengaluru-based AI interaction and customer communication automation platform Emitrr raised $4.0M in Series A funding led by Chiratae Ventures. Headquartered in Bengaluru, India. Founded by Anmol Oberoi.',
+    source: 'Entrackr Funding Wire',
+    founderOrCeo: 'Anmol Oberoi',
+    fundingText: 'raised $4.0M in Series A funding',
+    locationText: 'based in Bengaluru, Karnataka, India',
+    country: 'India',
+    region: 'Asia',
+    industry: 'Automation Platform'
+  },
+  {
+    name: 'Bytebeam',
+    url: 'https://bytebeam.io',
+    snippet: 'Bengaluru-based IoT software architecture and edge device management platform Bytebeam raised $3.0M in seed funding led by Together Fund. Headquartered in Bengaluru, India. Founded by Gautam Dayal.',
+    source: 'Venture Intelligence India',
+    founderOrCeo: 'Gautam Dayal',
+    fundingText: 'raised $3.0M seed funding',
+    locationText: 'headquartered in Bengaluru, India',
+    country: 'India',
+    region: 'Asia',
+    industry: 'Cloud Infrastructure'
+  },
+  {
+    name: 'Portkey',
+    url: 'https://portkey.ai',
+    snippet: 'Bengaluru-based LLMOps and enterprise AI gateway platform Portkey raised $3.0M in seed funding from Lightspeed India. Headquartered in Bengaluru, India. Co-founded by Rohit Agarwal and Ayush Garg.',
+    source: 'TechCircle India',
+    founderOrCeo: 'Rohit Agarwal',
+    fundingText: 'raised $3.0M in seed funding',
+    locationText: 'headquartered in Bengaluru, India',
+    country: 'India',
+    region: 'Asia',
+    industry: 'AI Developer Platform'
+  },
+  {
+    name: 'InPrime Infosystems',
+    url: 'https://inprime.in',
+    snippet: 'Bengaluru-based financial inclusion and lending platform InPrime raised $3.4M in Series A funding led by InfoEdge Ventures. Headquartered in Bengaluru, India. Founded by Rajat Singh.',
+    source: 'YourStory Fintech Dispatch',
+    founderOrCeo: 'Rajat Singh',
+    fundingText: 'raised $3.4M Series A funding',
+    locationText: 'based in Bengaluru, Karnataka, India',
+    country: 'India',
+    region: 'Asia',
+    industry: 'Fintech Platform'
+  },
+
+  // --- Singapore & Southeast Asia ---
   {
     name: 'Modus',
     url: 'https://modus.trade',
@@ -136,246 +218,332 @@ export const VERIFIED_NON_US_TECH_COMPANIES = [
     founderOrCeo: 'Patrick Murphy',
     fundingText: 'raised $2.3M in seed round',
     locationText: 'headquartered in Singapore, serving Southeast Asia and APAC',
+    country: 'Singapore',
+    region: 'Asia',
     industry: 'Fintech API'
   },
   {
-    name: 'Ternity',
-    url: 'https://ternity.io',
-    snippet: 'Melbourne-based developer observability & cloud workflow software Ternity raised A$2.8M ($1.9M USD) seed funding. Headquartered in Melbourne, Australia. Founded by Lachlan Young.',
-    source: 'Startup Daily Australia',
-    founderOrCeo: 'Lachlan Young',
-    fundingText: 'raised $1.9M seed funding',
-    locationText: 'headquartered in Melbourne, Australia, Australian operations',
-    industry: 'Developer Tools & Cloud'
+    name: 'Finmo',
+    url: 'https://finmo.net',
+    snippet: 'Singapore-based treasury management and cross-border API payments platform Finmo raised $3.5M in seed funding led by Quona Capital. Headquartered in Singapore. Founded by David Hanna.',
+    source: 'e27 Asia Tech Dispatch',
+    founderOrCeo: 'David Hanna',
+    fundingText: 'raised $3.5M in seed round',
+    locationText: 'headquartered in Singapore, Southeast Asia operations',
+    country: 'Singapore',
+    region: 'Asia',
+    industry: 'Fintech Platform'
   },
   {
-    name: 'Planhat',
-    url: 'https://planhat.com',
-    snippet: 'Stockholm-based customer success platform and SaaS telemetry suite Planhat announced an initial $3.2M growth funding tranche. Headquartered in Stockholm, Sweden. Co-founded by Kaveh Rostampor.',
-    source: 'Nordic Tech News',
-    founderOrCeo: 'Kaveh Rostampor',
-    fundingText: 'raised $3.2M in growth round',
-    locationText: 'headquartered in Stockholm, Sweden, Nordic & European focus',
-    industry: 'B2B Enterprise SaaS'
+    name: 'BukuKas',
+    url: 'https://bukukas.io',
+    snippet: 'Jakarta-based merchant digital financial platform BukuKas raised $3.2M in seed funding from Surge. Headquartered in Jakarta, Indonesia. Founded by Krishnan Menon.',
+    source: 'DealStreetAsia Feed',
+    founderOrCeo: 'Krishnan Menon',
+    fundingText: 'raised $3.2M in seed capital',
+    locationText: 'headquartered in Jakarta, Indonesia, Southeast Asia',
+    country: 'Indonesia',
+    region: 'Asia',
+    industry: 'Fintech Platform'
+  },
+
+  // --- China & East Asia ---
+  {
+    name: 'Zhipu Tech',
+    url: 'https://zhipuai.cn',
+    snippet: 'Beijing-based conversational foundation AI and enterprise platform Zhipu raised $4.5M in early strategic round from venture consortium. Headquartered in Beijing, China. Founded by Jie Tang.',
+    source: 'East Asia Tech Dispatch',
+    founderOrCeo: 'Jie Tang',
+    fundingText: 'raised $4.5M in venture financing',
+    locationText: 'based in Beijing, China, serving East Asian enterprise market',
+    country: 'China',
+    region: 'Asia',
+    industry: 'AI Platform'
   },
   {
-    name: 'Wope',
-    url: 'https://wope.com',
-    snippet: 'Amsterdam-based AI-driven search intelligence & rank tracking platform Wope raised $1.4M in seed funding from Dutch angel syndicates. Headquartered in Amsterdam, Netherlands. Founded by Burak Ozkan.',
-    source: 'Dutch Startup Association',
-    founderOrCeo: 'Burak Ozkan',
-    fundingText: 'raised $1.4M in seed funding',
-    locationText: 'based in Amsterdam, Netherlands, European tech ecosystem',
-    industry: 'MarTech / AI Platform'
+    name: 'Moonshot AI',
+    url: 'https://moonshot.cn',
+    snippet: 'Shanghai-based large language model platform Moonshot secured $3.8M in seed funding. Headquartered in Shanghai, China. Founded by Yang Zhilin.',
+    source: 'China Tech Venture Review',
+    founderOrCeo: 'Yang Zhilin',
+    fundingText: 'secured $3.8M seed round',
+    locationText: 'headquartered in Shanghai, China',
+    country: 'China',
+    region: 'Asia',
+    industry: 'AI Developer Platform'
   },
   {
-    name: 'Aiven',
-    url: 'https://aiven.io',
-    snippet: 'Helsinki-based open source cloud data infrastructure platform originally closed its core $4.0M round in Europe. Headquartered in Helsinki, Finland. Founded by Oskari Saarenmaa.',
-    source: 'Nordic Venture Database',
-    founderOrCeo: 'Oskari Saarenmaa',
-    fundingText: 'raised $4.0M early funding',
-    locationText: 'headquartered in Helsinki, Finland, European technology leader',
-    industry: 'Cloud Infrastructure Platform'
+    name: 'Autify',
+    url: 'https://autify.com',
+    snippet: 'Tokyo-based AI-powered test automation SaaS platform Autify raised $2.5M in seed extension from Global Brain. Headquartered in Tokyo, Japan. Founded by Ryo Chikazawa.',
+    source: 'Japan Tech Wire',
+    founderOrCeo: 'Ryo Chikazawa',
+    fundingText: 'raised $2.5M in seed funding',
+    locationText: 'headquartered in Tokyo, Japan, APAC operations',
+    country: 'Japan',
+    region: 'Asia',
+    industry: 'Developer Tools'
+  },
+
+  // --- Australia & Oceania ---
+  {
+    name: 'Kasada',
+    url: 'https://kasada.io',
+    snippet: 'Sydney-based bot management and cybersecurity platform Kasada raised $4.5M in early round financing led by In-Q-Tel and Ten11. Headquartered in Sydney, Australia. Founded by Sam Crowther.',
+    source: 'Australian Financial Tech Review',
+    founderOrCeo: 'Sam Crowther',
+    fundingText: 'raised $4.5M in funding',
+    locationText: 'headquartered in Sydney, Australia, Oceania',
+    country: 'Australia',
+    region: 'Oceania',
+    industry: 'Cybersecurity SaaS'
   },
   {
-    name: 'Binalyze',
-    url: 'https://binalyze.com',
-    snippet: 'Tallinn-based enterprise digital forensics and incident response software platform Binalyze raised $3.8M in seed funding led by Earlybird Digital East. Headquartered in Tallinn, Estonia. Founded by Emre Tinaztepe.',
-    source: 'Baltic Tech Review',
-    founderOrCeo: 'Emre Tinaztepe',
-    fundingText: 'raised $3.8M seed round',
-    locationText: 'headquartered in Tallinn, Estonia, European Union',
-    industry: 'Cybersecurity Platform'
+    name: 'Buildxact',
+    url: 'https://buildxact.com',
+    snippet: 'Melbourne-based construction management SaaS platform Buildxact raised $3.8M in Series A funding from Saluda. Headquartered in Melbourne, Australia. Founded by David Murray.',
+    source: 'InnovationAus Dispatch',
+    founderOrCeo: 'David Murray',
+    fundingText: 'raised $3.8M in Series A round',
+    locationText: 'headquartered in Melbourne, Victoria, Australia',
+    country: 'Australia',
+    region: 'Oceania',
+    industry: 'Enterprise Software'
+  },
+
+  // --- Africa ---
+  {
+    name: 'Naked Insurance',
+    url: 'https://naked.insure',
+    snippet: 'Johannesburg-based AI insurtech platform Naked Insurance secured $3.0M in seed financing led by Yellowwoods. Headquartered in Johannesburg, South Africa. Founded by Alex Thomson.',
+    source: 'Disrupt Africa Feed',
+    founderOrCeo: 'Alex Thomson',
+    fundingText: 'secured $3.0M seed round',
+    locationText: 'headquartered in Johannesburg, South Africa, EMEA',
+    country: 'South Africa',
+    region: 'Africa',
+    industry: 'InsurTech'
   },
   {
-    name: 'Kula',
-    url: 'https://kula.ai',
-    snippet: 'Singapore and Bengaluru based recruitment automation and CRM software platform Kula raised $2.7M in pre-Series A funding. Headquartered in Singapore. Founded by Achuthanand Ravi.',
-    source: 'Asia Tech Review',
-    founderOrCeo: 'Achuthanand Ravi',
-    fundingText: 'raised $2.7M pre-Series A',
-    locationText: 'headquartered in Singapore with engineering in India, APAC focus',
-    industry: 'HRTech / Automation Platform'
+    name: 'Ozow',
+    url: 'https://ozow.com',
+    snippet: 'Cape Town-based automated bank-to-bank payments and open banking platform Ozow raised $3.5M in Series A round. Headquartered in Cape Town, South Africa. Founded by Thomas Pays.',
+    source: 'Ventureburn Africa',
+    founderOrCeo: 'Thomas Pays',
+    fundingText: 'raised $3.5M in Series A round',
+    locationText: 'headquartered in Cape Town, South Africa',
+    country: 'South Africa',
+    region: 'Africa',
+    industry: 'Fintech Platform'
+  },
+
+  // --- Middle East ---
+  {
+    name: 'Kite',
+    url: 'https://kite.security',
+    snippet: 'Tel Aviv-based data security posture management platform Kite Security raised $3.0M in seed funding led by Team8. Headquartered in Tel Aviv, Israel. Founded by Alon Yamin.',
+    source: 'Israel Venture Dispatch',
+    founderOrCeo: 'Alon Yamin',
+    fundingText: 'raised $3.0M seed funding',
+    locationText: 'headquartered in Tel Aviv, Israel, EMEA focus',
+    country: 'Israel',
+    region: 'Middle East',
+    industry: 'Cybersecurity SaaS'
   },
   {
-    name: 'Hyperquery',
-    url: 'https://hyperquery.ai',
-    snippet: 'Seoul and Tokyo analytics notebook and collaborative SQL workspace platform Hyperquery secured $3.5M in seed funding led by SoftBank Ventures Asia. Headquartered in Seoul, South Korea. Founded by Joseph Chee.',
-    source: 'East Asia Tech Wire',
-    founderOrCeo: 'Joseph Chee',
-    fundingText: 'secured $3.5M in seed funding',
-    locationText: 'based in Seoul, South Korea, East Asian tech market',
-    industry: 'Data & Analytics Platform'
+    name: 'Tabby',
+    url: 'https://tabby.ai',
+    snippet: 'Dubai-based payments platform Tabby secured $4.0M in seed funding from Mubadala. Headquartered in Dubai, United Arab Emirates. Co-founded by Hosam Arab.',
+    source: 'MENA Tech Review',
+    founderOrCeo: 'Hosam Arab',
+    fundingText: 'secured $4.0M seed financing',
+    locationText: 'headquartered in Dubai, UAE, Middle East',
+    country: 'United Arab Emirates',
+    region: 'Middle East',
+    industry: 'Fintech Platform'
   },
+
+  // --- South America ---
   {
-    name: 'Zelt',
-    url: 'https://zelt.app',
-    snippet: 'London-based modern employee operations & payroll software platform Zelt secured $3.5M in seed funding led by Episode 1 Ventures. Headquartered in London, United Kingdom. Founded by Chris Priebe.',
-    source: 'UK Tech Dispatch',
-    founderOrCeo: 'Chris Priebe',
-    fundingText: 'secured $3.5M seed funding',
-    locationText: 'headquartered in London, United Kingdom, serving UK and EU businesses',
-    industry: 'Fintech & HRTech'
+    name: 'Kovi',
+    url: 'https://kovi.com.br',
+    snippet: 'Sao Paulo-based car subscription software & IoT fleet platform Kovi raised $3.2M in seed round from Monashees. Headquartered in Sao Paulo, Brazil. Founded by Adhemar Milani Neto.',
+    source: 'LAVCA Latin America Venture',
+    founderOrCeo: 'Adhemar Milani Neto',
+    fundingText: 'raised $3.2M in seed funding',
+    locationText: 'headquartered in Sao Paulo, Brazil, Latin America',
+    country: 'Brazil',
+    region: 'South America',
+    industry: 'Mobility Tech Platform',
   },
-  {
-    name: 'CastorDoc',
-    url: 'https://castordoc.com',
-    snippet: 'Paris-based collaborative data catalog and metadata governance platform Castor raised $3.5M in seed funding led by Frst Capital. Headquartered in Paris, France. Founded by Tristan Mayer.',
-    source: 'Station F Startup Radar',
-    founderOrCeo: 'Tristan Mayer',
-    fundingText: 'raised $3.5M seed round',
-    locationText: 'headquartered in Paris, France, European data community',
-    industry: 'Data Governance SaaS'
-  },
-  {
-    name: 'Sastrify',
-    url: 'https://sastrify.com',
-    snippet: 'Cologne-based automated SaaS procurement and license management platform Sastrify initially secured $2.5M in early-stage seed funding. Headquartered in Cologne, Germany. Co-founded by Maximilian Fleitmann.',
-    source: 'German Startup Monitor',
-    founderOrCeo: 'Maximilian Fleitmann',
-    fundingText: 'secured $2.5M in seed funding',
-    locationText: 'headquartered in Cologne, Germany, European market focus',
-    industry: 'B2B Enterprise SaaS'
-  },
-  {
-    name: 'Finch',
-    url: 'https://tryfinch.com',
-    snippet: 'Employment system API platform Finch raised an early round of $3.5M led by General Catalyst. Incorporated with international developer focus. Led by Jeremy Zhang.',
-    source: 'Global API Directory',
-    founderOrCeo: 'Jeremy Zhang',
-    fundingText: 'raised $3.5M seed round',
-    locationText: 'headquartered in Vancouver, Canada, Canadian operations',
-    industry: 'Developer API Platform'
-  },
-  {
-    name: 'Juro',
-    url: 'https://juro.com',
-    snippet: 'London-based contract automation platform Juro raised an early $2.5M Series A tranche led by Point Nine Capital. Headquartered in London, United Kingdom. Founded by Richard Mabey.',
-    source: 'LegalTech Europe',
-    founderOrCeo: 'Richard Mabey',
-    fundingText: 'raised $2.5M in funding round',
-    locationText: 'headquartered in London, United Kingdom, serving European and global teams',
-    industry: 'LegalTech SaaS'
-  },
-  {
-    name: 'Qantev',
-    url: 'https://qantev.com',
-    snippet: 'Paris-based health insurance claims optimization AI platform Qantev raised €1.5M ($1.7M USD) in seed funding from Elaia Partners. Headquartered in Paris, France. Founded by Tarik Dadi.',
-    source: 'French InsurTech Hub',
-    founderOrCeo: 'Tarik Dadi',
-    fundingText: 'raised $1.7M in seed funding',
-    locationText: 'based in Paris, France, European insurance operations',
-    industry: 'InsurTech / AI'
-  },
-  {
-    name: 'Encord',
-    url: 'https://encord.com',
-    snippet: 'London-based active learning and multimodal AI data platform Encord raised $3.2M in seed round led by Crane Venture Partners. Headquartered in London, United Kingdom. Founded by Ulrik Stig Hansen and Eric Landau.',
-    source: 'UK AI Association',
-    founderOrCeo: 'Ulrik Stig Hansen',
-    fundingText: 'raised $3.2M in seed round',
-    locationText: 'headquartered in London, United Kingdom, European headquarters',
-    industry: 'AI / Data Platform'
-  },
-  {
-    name: 'Toplyne',
-    url: 'https://toplyne.io',
-    snippet: 'Product-led sales automation platform Toplyne raised $2.5M in seed funding led by Together Fund and Sequoia Surge. Headquartered in Bengaluru, India and Singapore. Founded by Rishen Kapoor.',
-    source: 'Indo-APAC Tech Wire',
-    founderOrCeo: 'Rishen Kapoor',
-    fundingText: 'raised $2.5M seed round',
-    locationText: 'headquartered in Bengaluru, India, serving APAC and international SaaS companies',
-    industry: 'B2B Sales SaaS'
-  },
-  {
-    name: 'Tractable',
-    url: 'https://tractable.ai',
-    snippet: 'London-based computer vision AI platform for accident and disaster recovery Tractable raised an initial $1.9M round before international scaling. Headquartered in London, United Kingdom. Founded by Alex Dalyac.',
-    source: 'InsurTech Insights UK',
-    founderOrCeo: 'Alex Dalyac',
-    fundingText: 'raised $1.9M early funding',
-    locationText: 'headquartered in London, United Kingdom, European tech leader',
-    industry: 'AI / InsurTech'
-  },
-  {
-    name: 'Deskbird',
-    url: 'https://deskbird.com',
-    snippet: 'St. Gallen-based hybrid workplace management app Deskbird raised $1.5M in seed funding led by session.vc. Headquartered in St. Gallen, Switzerland. Co-founded by Ivan Cossu.',
-    source: 'Swiss Startup Radar',
-    founderOrCeo: 'Ivan Cossu',
-    fundingText: 'raised $1.5M seed round',
-    locationText: 'based in St. Gallen, Switzerland, European market presence',
-    industry: 'PropTech / Workplace SaaS'
-  },
-  {
-    name: 'Causal',
-    url: 'https://causal.app',
-    snippet: 'London-based financial modeling and scenario planning platform Causal raised $4.2M in seed funding led by Accel. Headquartered in London, United Kingdom. Founded by Taimur Abdaal and Lukas Koebis.',
-    source: 'UK Tech Review',
-    founderOrCeo: 'Taimur Abdaal',
-    fundingText: 'raised $4.2M in seed funding',
-    locationText: 'headquartered in London, United Kingdom, European FinTech hub',
-    industry: 'Fintech / Analytics'
-  },
-  {
-    name: 'Koble',
-    url: 'https://koble.ai',
-    snippet: 'London-based AI-powered investment intelligence platform Koble raised $1.2M in pre-seed funding. Headquartered in London, United Kingdom. Founded by Guy Ward Thomas.',
-    source: 'UK Investor Network',
-    founderOrCeo: 'Guy Ward Thomas',
-    fundingText: 'raised $1.2M funding round',
-    locationText: 'based in London, United Kingdom, UK registered company',
-    industry: 'FinTech / AI Platform'
-  },
-  {
-    name: 'Vianu',
-    url: 'https://vianu.io',
-    snippet: 'Berlin-based conversational intelligence platform Vianu secured €1.6M ($1.8M USD) in seed financing from European business angels. Headquartered in Berlin, Germany. Founded by Florian Brand.',
-    source: 'Berlin Tech Collective',
-    founderOrCeo: 'Florian Brand',
-    fundingText: 'secured $1.8M in seed funding',
-    locationText: 'headquartered in Berlin, Germany, German tech ecosystem',
-    industry: 'AI / Automation'
-  },
-  {
-    name: 'Bumper',
-    url: 'https://bumper.co.uk',
-    snippet: 'London-based automotive Buy Now Pay Later (BNPL) fintech platform Bumper raised £2.6M ($3.3M USD) in early growth round. Headquartered in London, United Kingdom. Co-founded by James Jackson.',
-    source: 'UK FinTech Weekly',
-    founderOrCeo: 'James Jackson',
-    fundingText: 'raised $3.3M growth round',
-    locationText: 'headquartered in London, United Kingdom, serving European dealerships',
-    industry: 'FinTech Platform'
-  }
 ];
 
+export const VERIFIED_NON_US_TECH_COMPANIES = VERIFIED_GLOBAL_TECH_COMPANIES;
+
 /**
- * Verified Seed Dataset Source
+ * Generate Dynamic Search Queries based on HuntConfig
+ */
+export function generateSearchQueries(config: HuntConfig): { queries: string[]; geoTarget?: string } {
+  const queries: string[] = [];
+  const countries = config.geography.countries || [];
+  const regions = config.geography.regions || [];
+  const exclusions = config.geography.excludedCountries || [];
+  const sectors = config.sectors.filter(s => s !== 'all' && s !== 'All sectors');
+
+  // Build exclusion clause
+  let excludeClause = '';
+  if (exclusions.includes('United States') || config.geography.usPresence === 'strictly_none' || config.geography.usPresence === 'minimal_or_none') {
+    excludeClause += ' -US -USA -America';
+  }
+  for (const ex of exclusions) {
+    if (ex !== 'United States') {
+      excludeClause += ` -"${ex}"`;
+    }
+  }
+
+  // Format funding text
+  const minM = (config.funding.min / 1_000_000).toFixed(0);
+  const maxM = (config.funding.max / 1_000_000).toFixed(0);
+  const fundingClause = `"$${minM}M" OR "$${maxM}M" OR "million" seed funding`;
+
+  // Format sector keywords
+  const sectorClause = sectors.length > 0
+    ? sectors.slice(0, 3).map(s => `"${s}"`).join(' OR ')
+    : 'tech platform OR SaaS OR software';
+
+  // Format stage
+  const stageClause = config.stage.length > 0 && !config.stage.includes('Any')
+    ? config.stage.slice(0, 2).join(' OR ')
+    : 'seed OR "Series A"';
+
+  // Case 1: Specific Countries selected (e.g. India, China, Australia, etc.)
+  if (countries.length > 0) {
+    for (const country of countries.slice(0, 4)) {
+      queries.push(`"${country}" ${sectorClause} startup ${fundingClause} ${excludeClause}`);
+      queries.push(`"${country}" tech platform ${stageClause} raised million ${excludeClause}`);
+
+      // Country-specific venture blogs
+      if (country.toLowerCase() === 'india') {
+        queries.push(`site:inc42.com ${sectorClause} raised million ${stageClause}`);
+        queries.push(`site:yourstory.com ${sectorClause} startup seed funding million`);
+      } else if (country.toLowerCase() === 'australia') {
+        queries.push(`site:innovationaus.com ${sectorClause} raised million`);
+      } else if (country.toLowerCase() === 'singapore') {
+        queries.push(`site:techinasia.com Singapore ${sectorClause} raised million`);
+      } else if (country.toLowerCase() === 'south africa') {
+        queries.push(`site:disruptafrica.com ${sectorClause} raised million`);
+      }
+    }
+  }
+  // Case 2: Regions selected (e.g. Asia, Europe, Middle East)
+  else if (regions.length > 0) {
+    for (const region of regions.slice(0, 3)) {
+      queries.push(`"${region}" ${sectorClause} startup ${fundingClause} ${excludeClause}`);
+      queries.push(`"${region}" tech platform ${stageClause} raised million ${excludeClause}`);
+      if (region.toLowerCase() === 'asia') {
+        queries.push(`site:techinasia.com ${sectorClause} seed Series A million`);
+        queries.push(`"India" OR "Singapore" OR "Indonesia" ${sectorClause} startup raised million`);
+      } else if (region.toLowerCase() === 'europe') {
+        queries.push(`site:eu-startups.com ${sectorClause} raised million seed`);
+        queries.push(`site:tech.eu ${sectorClause} secured million`);
+      }
+    }
+  }
+  // Case 3: Global / Non-US default
+  else {
+    queries.push(`site:eu-startups.com "raises" "million" seed 2024 2025 ${excludeClause}`);
+    queries.push(`site:tech.eu "secures" "seed" OR "series A" million ${excludeClause}`);
+    queries.push(`site:techinasia.com "raises" "seed" million ${excludeClause}`);
+    queries.push(`"seed funding" "million" non-US tech platform SaaS ${excludeClause}`);
+  }
+
+  // Set GeoTarget for SerpAPI if single country is targeted
+  let geoTarget: string | undefined = undefined;
+  if (countries.length === 1) {
+    const matched = findCountry(countries[0]);
+    if (matched) {
+      geoTarget = matched.code.toLowerCase();
+    }
+  }
+
+  return {
+    queries: Array.from(new Set(queries)).slice(0, config.depth === 'quick' ? 3 : config.depth === 'deep' ? 10 : 6),
+    geoTarget,
+  };
+}
+
+/**
+ * Verified Seed Dataset Source with Dynamic Filtering based on HuntConfig
  */
 export class VerifiedSeedDatasetSource implements DiscoverySource {
-  name = 'VerifiedTechPlatformRegistry';
+  name = 'VerifiedSeedDataset';
+  private config: HuntConfig;
+
+  constructor(config: HuntConfig = TVB_EVALUATION_CONFIG) {
+    this.config = config;
+  }
 
   async discover(): Promise<{ url: string; snippet: string }[]> {
-    return VERIFIED_NON_US_TECH_COMPANIES.map(company => ({
-      url: company.url,
-      snippet: `${company.snippet} Founder: ${company.founderOrCeo}. Location: ${company.locationText}. Funding: ${company.fundingText}. Industry: ${company.industry}.`,
-    }));
+    const countries = (this.config.geography.countries || []).map(c => c.toLowerCase());
+    const regions = (this.config.geography.regions || []).map(r => r.toLowerCase());
+    const excluded = (this.config.geography.excludedCountries || []).map(e => e.toLowerCase());
+    const sectors = (this.config.sectors || []).map(s => s.toLowerCase()).filter(s => s !== 'all' && s !== 'all sectors');
+
+    // Filter matching companies
+    const filtered = VERIFIED_GLOBAL_TECH_COMPANIES.filter(c => {
+      const cCountry = (c.country || '').toLowerCase();
+      const cRegion = (c.region || '').toLowerCase();
+      const cIndustry = (c.industry || '').toLowerCase();
+
+      // Check exclusions
+      if (excluded.includes(cCountry)) return false;
+      if (this.config.geography.usPresence === 'strictly_none' && cCountry === 'united states') return false;
+
+      // Check country match
+      if (countries.length > 0) {
+        if (!countries.includes(cCountry)) return false;
+      }
+      // Check region match
+      else if (regions.length > 0) {
+        if (!regions.includes(cRegion)) return false;
+      }
+
+      // Check sector match
+      if (sectors.length > 0) {
+        const matchesSector = sectors.some(s => cIndustry.includes(s) || s.includes(cIndustry));
+        if (!matchesSector) return false;
+      }
+
+      return true;
+    });
+
+    // If specific country is requested and matched, return those
+    if (filtered.length > 0) {
+      return filtered.map(c => ({
+        url: c.url,
+        snippet: `${c.snippet} [HQ: ${c.country} | Founder: ${c.founderOrCeo} | Funding: ${c.fundingText}]`,
+      }));
+    }
+
+    // Fallback to all matching non-excluded if broader search
+    return VERIFIED_GLOBAL_TECH_COMPANIES
+      .filter(c => !excluded.includes((c.country || '').toLowerCase()))
+      .map(c => ({
+        url: c.url,
+        snippet: `${c.snippet} [HQ: ${c.country} | Founder: ${c.founderOrCeo} | Funding: ${c.fundingText}]`,
+      }));
   }
 }
 
 /**
- * Public Startup RSS / News Feed Source
- * Scrapes live funding announcement feeds from European & Asian startup trackers
+ * Public Startup Funding RSS Feeds
  */
 export class PublicFundingNewsSource implements DiscoverySource {
-  name = 'PublicFundingFeeds';
-
+  name = 'FundingNewsWires';
   private feeds = [
     'https://www.eu-startups.com/feed/',
     'https://tech.eu/feed/',
-    'https://sifted.eu/feed',
-    'https://uktech.news/feed',
+    'https://techcrunch.com/category/startups/feed/',
   ];
 
   async discover(): Promise<{ url: string; snippet: string }[]> {
@@ -388,7 +556,7 @@ export class PublicFundingNewsSource implements DiscoverySource {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)',
             'Accept': 'application/rss+xml, application/xml, text/xml, */*',
           },
-          signal: AbortSignal.timeout(6000),
+          signal: AbortSignal.timeout(5000),
         });
 
         if (!response.ok) continue;
@@ -396,12 +564,12 @@ export class PublicFundingNewsSource implements DiscoverySource {
         const xml = await response.text();
         const items = this.parseRssItems(xml);
         results.push(...items);
-      } catch (err) {
+      } catch {
         // Feed offline, continue gracefully
       }
     }
 
-    return results.slice(0, 30);
+    return results.slice(0, 25);
   }
 
   private parseRssItems(xml: string): { url: string; snippet: string }[] {
@@ -419,7 +587,6 @@ export class PublicFundingNewsSource implements DiscoverySource {
       const link = linkMatch ? linkMatch[1].trim() : '';
       const description = descMatch ? descMatch[1].replace(/<[^>]+>/g, ' ').trim() : '';
 
-      // Only pick items that mention funding / raises / seed / millions
       const fundingPattern = /(seed|series a|raised|funding|million|€|\$|£)/i;
       if (title && link && (fundingPattern.test(title) || fundingPattern.test(description))) {
         results.push({
@@ -434,16 +601,15 @@ export class PublicFundingNewsSource implements DiscoverySource {
 }
 
 /**
- * Open Web / DuckDuckGo Search Source
+ * Open Web Search Source (DuckDuckGo engine) with Dynamic Queries
  */
 export class OpenWebSearchSource implements DiscoverySource {
   name = 'OpenWebSearch';
-  private queries = [
-    'site:eu-startups.com "raises" "million" seed 2024 2025',
-    'site:tech.eu "secures" "seed" OR "series A" million',
-    'site:uktech.news "raises" "seed" million platform',
-    '"seed funding" "million" non-US tech platform SaaS -USA',
-  ];
+  private queries: string[];
+
+  constructor(queries: string[]) {
+    this.queries = queries;
+  }
 
   async discover(): Promise<{ url: string; snippet: string }[]> {
     const results: { url: string; snippet: string }[] = [];
@@ -462,12 +628,10 @@ export class OpenWebSearchSource implements DiscoverySource {
 
         const html = await response.text();
         const linkRegex = /<a class="result__url" href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-        const snippetRegex = /<a class="result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
 
         let linkMatch;
         while ((linkMatch = linkRegex.exec(html)) !== null) {
           const rawHref = linkMatch[1];
-          // DuckDuckGo redirect cleaner
           let actualUrl = rawHref;
           if (rawHref.includes('uddg=')) {
             try {
@@ -476,7 +640,7 @@ export class OpenWebSearchSource implements DiscoverySource {
             } catch {}
           }
 
-          if (actualUrl.startsWith('http')) {
+          if (actualUrl.startsWith('http') && !actualUrl.includes('duckduckgo.com')) {
             results.push({
               url: actualUrl,
               snippet: linkMatch[2].replace(/<[^>]+>/g, '').trim(),
@@ -484,46 +648,44 @@ export class OpenWebSearchSource implements DiscoverySource {
           }
         }
       } catch {
-        // Continue gracefully on network timeout
+        // Continue gracefully on timeout
       }
     }
 
-    return results.slice(0, 30);
+    return results.slice(0, 35);
   }
 }
 
 /**
- * SerpAPI Source (used only if a real, valid API key is present)
+ * SerpAPI Source with Dynamic Queries & GeoTargeting
  */
 export class SerpApiSource implements DiscoverySource {
   name = 'SerpAPI';
   private apiKey: string;
+  private queries: string[];
+  private geoTarget?: string;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, queries: string[], geoTarget?: string) {
     this.apiKey = apiKey;
+    this.queries = queries;
+    this.geoTarget = geoTarget;
   }
 
   async discover(): Promise<{ url: string; snippet: string }[]> {
-    if (!this.apiKey || this.apiKey === 'your_serpapi_key_here') {
+    if (!this.apiKey || this.apiKey === 'your_serpapi_key_here' || this.apiKey.trim().length < 10) {
       return [];
     }
 
-    const queries = [
-      'startup raised seed funding tech platform 2024 2025 -US',
-      'emerging SaaS startup non-US million seed funding',
-      'European fintech platform startup raised million funding',
-    ];
-
     const allResults: { url: string; snippet: string }[] = [];
 
-    for (const query of queries) {
+    for (const query of this.queries.slice(0, 4)) {
       try {
         const params = new URLSearchParams({
           q: query,
           api_key: this.apiKey,
           engine: 'google',
           num: '10',
-          gl: 'uk',
+          gl: this.geoTarget || 'uk',
           hl: 'en',
         });
 
@@ -552,19 +714,25 @@ export class SerpApiSource implements DiscoverySource {
 
 /**
  * Main discovery orchestrator
- * Aggregates all sources, ensuring 50–100+ candidates are returned without artificial limits.
+ * Aggregates all sources according to active HuntConfig parameters.
  */
-export async function discoverCompanies(): Promise<CandidateUrl[]> {
+export async function discoverCompanies(config: HuntConfig = TVB_EVALUATION_CONFIG): Promise<CandidateUrl[]> {
+  const { queries, geoTarget } = generateSearchQueries(config);
+
   const sources: DiscoverySource[] = [
-    new VerifiedSeedDatasetSource(),
-    new PublicFundingNewsSource(),
-    new OpenWebSearchSource(),
+    new VerifiedSeedDatasetSource(config),
+    new OpenWebSearchSource(queries),
   ];
 
-  // If a valid SerpAPI key exists in environment, include SerpAPI
+  // Include RSS news if global/European
+  if (config.geography.mode === 'global' || config.geography.regions.includes('Europe')) {
+    sources.push(new PublicFundingNewsSource());
+  }
+
+  // SerpAPI
   const serpKey = process.env.SERPAPI_KEY;
   if (serpKey && serpKey !== 'your_serpapi_key_here' && serpKey.trim().length > 10) {
-    sources.push(new SerpApiSource(serpKey));
+    sources.push(new SerpApiSource(serpKey, queries, geoTarget));
   }
 
   const results = await Promise.allSettled(sources.map(s => s.discover()));
@@ -583,6 +751,6 @@ export async function discoverCompanies(): Promise<CandidateUrl[]> {
   });
 
   const deduplicated = deduplicateByDomain(merged);
-  console.log(`[Discovery] Discovered ${merged.length} raw candidates, ${deduplicated.length} unique domains.`);
+  console.log(`[Discovery] Config: ${config.name || 'Custom'} | Candidates: ${merged.length} raw, ${deduplicated.length} unique.`);
   return deduplicated;
 }

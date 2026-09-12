@@ -3,7 +3,7 @@
  * 
  * Orchestrates the full company discovery pipeline:
  * Discovery → Extraction → Validation → Email Verification → Dedupe/Rank
- * Supports both JSON response and Server-Sent Events (SSE) streaming for real-time UI telemetry.
+ * Supports dynamic HuntConfig parameterization and real-time Server-Sent Events (SSE).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,7 +12,7 @@ import { extractAllCandidates } from '@/lib/extraction';
 import { validateCompany } from '@/lib/validation';
 import { findVerifiedEmail } from '@/lib/email';
 import { rankCompanies, needsMoreDiscovery, MAX_DISCOVERY_ROUNDS } from '@/lib/rank';
-import { RunAgentResult, ValidatedCompany, CompanyRecord } from '@/lib/types';
+import { RunAgentResult, ValidatedCompany, CompanyRecord, HuntConfig, TVB_EVALUATION_CONFIG } from '@/lib/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,9 +30,10 @@ interface PipelineStats {
 }
 
 /**
- * Full execution logic with optional streaming writer
+ * Full execution logic with HuntConfig & optional streaming writer
  */
 async function executePipeline(
+  config: HuntConfig = TVB_EVALUATION_CONFIG,
   onEvent?: (event: { type: string; message: string; stage?: number; stageName?: string; company?: CompanyRecord; stats?: PipelineStats }) => void
 ): Promise<RunAgentResult> {
   const startTime = Date.now();
@@ -57,15 +58,24 @@ async function executePipeline(
     }
   };
 
-  log('Initializing Autonomous Company Discovery Agent...', 0, 'Initialization');
+  const targetLeads = config.targetLeads || 15;
+  const targetGeo = config.geography.countries.length > 0
+    ? config.geography.countries.join(', ')
+    : config.geography.regions.length > 0
+    ? config.geography.regions.join(', ')
+    : 'Global Non-US';
 
-  for (let round = 1; round <= MAX_DISCOVERY_ROUNDS; round++) {
-    log(`[Round ${round}] Commencing multi-source candidate discovery...`, 1, 'Discovery');
+  log(`Initializing Huntlyst Engine [Target: ${targetLeads} leads | Geo: ${targetGeo} | Mode: ${config.funding.preset || '$1M-$5M'}]...`, 0, 'Initialization');
+
+  const maxRounds = config.depth === 'quick' ? 1 : config.depth === 'deep' || config.depth === 'exhaustive' ? 4 : MAX_DISCOVERY_ROUNDS;
+
+  for (let round = 1; round <= maxRounds; round++) {
+    log(`[Round ${round}/${maxRounds}] Commencing dynamic discovery for ${targetGeo}...`, 1, 'Discovery');
 
     // 1. Discovery
-    const candidates = await discoverCompanies();
+    const candidates = await discoverCompanies(config);
     stats.discovered += candidates.length;
-    log(`[Round ${round}] Found ${candidates.length} candidate URLs across discovery feeds`, 1, 'Discovery');
+    log(`[Round ${round}] Discovered ${candidates.length} candidate URLs matching hunt criteria`, 1, 'Discovery');
 
     if (candidates.length === 0) {
       log(`[Round ${round}] No further candidates in this round.`, 1, 'Discovery');
@@ -73,38 +83,39 @@ async function executePipeline(
     }
 
     // 2. Extraction
-    log(`[Round ${round}] Extracting structured profiles for ${candidates.length} candidates (concurrency: 5)...`, 2, 'Extraction');
-    const extractedMap = await extractAllCandidates(candidates, 5);
+    const concurrency = config.depth === 'quick' ? 3 : 5;
+    log(`[Round ${round}] Extracting structured intelligence for ${candidates.length} candidates (concurrency: ${concurrency})...`, 2, 'Extraction');
+    const extractedMap = await extractAllCandidates(candidates, concurrency);
     stats.extracted += extractedMap.size;
-    log(`[Round ${round}] Successfully extracted ${extractedMap.size} company profiles`, 2, 'Extraction');
+    log(`[Round ${round}] Extracted ${extractedMap.size} company profiles`, 2, 'Extraction');
 
     // 3. Validation
-    log(`[Round ${round}] Applying strict deterministic criteria ($1M-$5M, Non-US, Tech Platform, Founder name)...`, 3, 'Validation');
+    log(`[Round ${round}] Applying deterministic validation (${targetGeo}, ${config.funding.preset || '$1M-$5M'}, ${config.techProfile})...`, 3, 'Validation');
     const roundValidated: ValidatedCompany[] = [];
 
     for (const [url, data] of extractedMap.entries()) {
       const candidate = candidates.find(c => c.url === url);
-      const validated = validateCompany(data, url, candidate?.source || 'Discovery');
+      const validated = validateCompany(data, url, candidate?.source || 'Discovery', config);
 
       if (validated) {
         stats.nonUsPassed++;
         stats.fundingQualified++;
         stats.founderFound++;
         roundValidated.push(validated);
-        log(`✓ Qualified criteria: ${validated.name} (${validated.industry}, ${validated.fundingOrRevenueText || '$1M-$5M'})`, 3, 'Validation');
+        log(`✓ Qualified: ${validated.name} [HQ: ${validated.country || 'Verified'} | ${validated.industry}]`, 3, 'Validation');
       }
     }
 
-    log(`[Round ${round}] Validated ${roundValidated.length} companies against all target criteria`, 3, 'Validation');
+    log(`[Round ${round}] Validated ${roundValidated.length} companies matching all criteria`, 3, 'Validation');
     allValidated.push(...roundValidated);
 
     if (roundValidated.length === 0) {
-      if (!needsMoreDiscovery(allRankedCompanies.length, 15)) break;
+      if (!needsMoreDiscovery(allRankedCompanies.length, targetLeads)) break;
       continue;
     }
 
     // 4. Email Verification
-    log(`[Round ${round}] Verifying founder/CEO emails with DNS MX lookups...`, 4, 'Email Verification');
+    log(`[Round ${round}] Verifying executive leadership emails via live DNS MX...`, 4, 'Email Verification');
     const emailResults = new Map<string, { email: string | null; verified: boolean; mxHost?: string | null }>();
 
     for (const comp of roundValidated) {
@@ -113,23 +124,23 @@ async function executePipeline(
 
       if (emailRes.verified && emailRes.email) {
         stats.emailVerified++;
-        log(`✓ Email deliverable: ${emailRes.email} for ${comp.name} [MX: ${emailRes.mxHost || 'Verified'}]`, 4, 'Email Verification');
+        log(`✓ Mailbox routable: ${emailRes.email} for ${comp.name} [MX: ${emailRes.mxHost || 'Verified'}]`, 4, 'Email Verification');
       }
     }
 
     // 5. Ranking and Deduplication
-    log(`[Round ${round}] Deduplicating and computing confidence scores...`, 5, 'Ranking');
-    const ranked = rankCompanies(roundValidated, emailResults);
+    log(`[Round ${round}] Computing evidence-based Hunt Scores (0–100)...`, 5, 'Ranking');
+    const ranked = rankCompanies(roundValidated, emailResults, config);
 
     for (const comp of ranked) {
       allRankedCompanies.push(comp);
       if (onEvent) {
-        onEvent({ type: 'candidate_found', message: `Qualified: ${comp.name}`, company: comp, stats });
+        onEvent({ type: 'candidate_found', message: `Qualified: ${comp.name} (Hunt Score: ${comp.huntScore}/100)`, company: comp, stats });
       }
     }
 
     // Check if target met
-    if (!needsMoreDiscovery(allRankedCompanies.length, 15)) {
+    if (!needsMoreDiscovery(allRankedCompanies.length, targetLeads)) {
       log(`Target reached! ${allRankedCompanies.length} fully qualified companies discovered.`, 5, 'Ranking');
       break;
     }
@@ -141,7 +152,7 @@ async function executePipeline(
     try {
       const domain = new URL(comp.website.startsWith('http') ? comp.website : `https://${comp.website}`).hostname.replace(/^www\./, '');
       const existing = domainMap.get(domain);
-      if (!existing || comp.confidenceScore > existing.confidenceScore) {
+      if (!existing || (comp.huntScore || 0) > (existing.huntScore || 0)) {
         domainMap.set(domain, comp);
       }
     } catch {
@@ -150,7 +161,7 @@ async function executePipeline(
   }
 
   const finalCompanies = Array.from(domainMap.values())
-    .sort((a, b) => b.confidenceScore - a.confidenceScore);
+    .sort((a, b) => (b.huntScore || 0) - (a.huntScore || 0));
 
   stats.finalRanked = finalCompanies.length;
   stats.durationMs = Date.now() - startTime;
@@ -169,6 +180,14 @@ export async function POST(request: NextRequest) {
   const isStream = request.nextUrl.searchParams.get('stream') === 'true' ||
     request.headers.get('accept')?.includes('text/event-stream');
 
+  let config: HuntConfig = TVB_EVALUATION_CONFIG;
+  try {
+    const body = await request.json().catch(() => null);
+    if (body && body.geography) {
+      config = body as HuntConfig;
+    }
+  } catch {}
+
   if (isStream) {
     const encoder = new TextEncoder();
     const stream = new TransformStream();
@@ -183,7 +202,7 @@ export async function POST(request: NextRequest) {
 
     (async () => {
       try {
-        const result = await executePipeline((event) => {
+        const result = await executePipeline(config, (event) => {
           sendEvent(event);
         });
         await sendEvent({ type: 'complete', message: 'Pipeline complete', result });
@@ -205,7 +224,7 @@ export async function POST(request: NextRequest) {
 
   // Standard JSON response
   try {
-    const result = await executePipeline();
+    const result = await executePipeline(config);
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Pipeline execution error:', error);

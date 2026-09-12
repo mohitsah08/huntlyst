@@ -229,3 +229,71 @@ export const REQUIRED_FIELDS = [
 ] as const;
 
 export type RequiredField = (typeof REQUIRED_FIELDS)[number];
+
+export interface HuntGeographyConfig {
+  mode: 'regions' | 'countries' | 'global' | 'custom';
+  regions: string[];
+  countries: string[];
+  excludedCountries: string[];
+  usPresence: 'strictly_none' | 'minimal_or_none' | 'limited' | 'any';
+}
+
+export interface HuntFundingConfig {
+  min: number;
+  max: number;
+  mode: 'funding' | 'revenue' | 'funding_or_revenue';
+  preset?: string;
+}
+
+export interface HuntConfig {
+  id?: string;
+  name?: string;
+  geography: HuntGeographyConfig;
+  sectors: string[];
+  businessModels: string[];
+  stage: string[];
+  funding: HuntFundingConfig;
+  companySize?: string[];
+  techProfile: 'platform_required' | 'tech_enabled' | 'software_only' | 'ai_first' | 'any_tech';
+  contactRequirement: 'ceo_only' | 'cofounder_only' | 'ceo_or_cofounder' | 'any_executive';
+  emailVerification: 'required' | 'preferred' | 'none';
+  depth: 'quick' | 'balanced' | 'deep' | 'exhaustive';
+  targetLeads: number;
+  naturalLanguageQuery?: string;
+}
+
+export interface SavedHuntPreset {
+  id: string;
+  name: string;
+  description: string;
+  isDefault?: boolean;
+  createdAt: string;
+  config: HuntConfig;
+}
+
+export const TVB_EVALUATION_CONFIG: HuntConfig = {
+  id: 'tvb_eval_default',
+  name: 'TVB Evaluation Profile',
+  geography: {
+    mode: 'global',
+    regions: [],
+    countries: [],
+    excludedCountries: ['United States'],
+    usPresence: 'minimal_or_none',
+  },
+  sectors: ['all'],
+  businessModels: ['Platform', 'SaaS', 'Marketplace', 'B2B', 'API'],
+  stage: ['Seed', 'Series A'],
+  funding: {
+    min: 1_000_000,
+    max: 5_000_000,
+    mode: 'funding_or_revenue',
+    preset: '$1M–$5M',
+  },
+  companySize: [],
+  techProfile: 'platform_required',
+  contactRequirement: 'ceo_or_cofounder',
+  emailVerification: 'required',
+  depth: 'balanced',
+  targetLeads: 15,
+};
