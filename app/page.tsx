@@ -1356,6 +1356,47 @@ export default function HomePage() {
         </main>
       </div>
 
+      {/* ================================================== */}
+      {/* FOOTER                                             */}
+      {/* ================================================== */}
+      <footer className="w-full border-t-[1.8px] border-[#2C2724] bg-[#FAF6EE] py-3 px-4 sm:px-6 mt-auto">
+        <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-center sm:justify-end gap-3 text-xs">
+          <span className="font-hand text-sm text-[#5A544E]">
+            Built by <span className="font-bold text-[#1E1B18]">Mohit Sah</span>
+          </span>
+          <span className="text-[#8C847A] hidden sm:inline" aria-hidden="true">•</span>
+          <div className="flex items-center gap-3">
+            <a
+              href="https://x.com/mohitsah08"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#1E1B18] hover:text-[#FF6B35] transition-colors p-1 inline-flex items-center justify-center"
+              aria-label="Mohit Sah on X (Twitter)"
+            >
+              <i className="ti ti-brand-x text-[22px]" aria-hidden="true" />
+            </a>
+            <a
+              href="https://www.instagram.com/mohitsah08"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#1E1B18] hover:text-[#FF6B35] transition-colors p-1 inline-flex items-center justify-center"
+              aria-label="Mohit Sah on Instagram"
+            >
+              <i className="ti ti-brand-instagram text-[22px]" aria-hidden="true" />
+            </a>
+            <a
+              href="https://www.facebook.com/share/1To1g5xUuv/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#1E1B18] hover:text-[#FF6B35] transition-colors p-1 inline-flex items-center justify-center"
+              aria-label="Mohit Sah on Facebook"
+            >
+              <i className="ti ti-brand-facebook text-[22px]" aria-hidden="true" />
+            </a>
+          </div>
+        </div>
+      </footer>
+
       {/* MODALS */}
       {selectedCompany && (
         <LeadDetailModal
