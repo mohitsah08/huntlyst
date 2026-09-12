@@ -1,106 +1,156 @@
 # HUNTLYST
 
-> **"Find the companies worth knowing."**  
-> *Autonomous company discovery, research, and lead intelligence platform.*
+<div align="center">
+
+<img src="https://huntlyst.vercel.app/huntlyst-logo.svg" alt="Huntlyst Logo" width="380" />
+
+<p align="center">
+  <strong>Find the companies worth knowing.</strong><br />
+  <em>Autonomous company discovery, deep venture research, and decision-maker lead intelligence.</em>
+</p>
+
+[![Live Hosted App](https://img.shields.io/badge/Live%20Demo-huntlyst.vercel.app-FF6B35?style=for-the-badge&logo=vercel&logoColor=white)](https://huntlyst.vercel.app)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-mohitsah08%2Fhuntlyst-1E1B18?style=for-the-badge&logo=github&logoColor=white)](https://github.com/mohitsah08/huntlyst)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2E7D32?style=for-the-badge)](LICENSE)
+[![Next.js 14](https://img.shields.io/badge/Next.js-14.2-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
+
+</div>
 
 ---
 
-## Overview
+## 📌 Executive Summary
 
-**Huntlyst** is an autonomous intelligence pipeline designed to discover, research, qualify, and score high-conviction companies and executive contacts matching exact investment or partnership mandates.
+**Huntlyst** is an enterprise-grade autonomous company discovery engine built to identify, research, validate, and score high-conviction technology companies and executive decision-makers matching exact investment or corporate development mandates.
 
-Unlike conventional scraped databases that suffer from stale listings, hallucinated emails, or generic bulk lists, Huntlyst operates on a foundational rule:
+Unlike traditional commercial databases that rely on static aggregations, stale listings, and unverified scraping, Huntlyst operates in real-time as an autonomous agent:
 
-> **Missing data is always better than invented data.**  
-> Every lead must possess concrete web evidence, deterministic validation passes, and live DNS MX record verification. If a required field cannot be verified, the candidate is discarded.
-
----
-
-## Core Target Profile Mandate
-
-A company qualifies **only if all** of the following criteria are validated:
-
-1. **Funding / Revenue**: Between **$1,000,000 and $5,000,000 USD** (inclusive).
-2. **Tech Platform**: Operates a verified technology product, SaaS, marketplace, API, developer tool, or tech-enabled software platform.
-3. **Non-US Geography**: Headquartered and operating primarily outside the United States (Europe, UK, APAC, LATAM, Canada, etc.).
-4. **Verified Leadership Contact**: A verifiable Founder, CEO, or Co-Founder with an active professional email address verified via DNS MX records.
+> 🛡️ **Foundational Principle: Missing data is always better than invented data.**  
+> Every prospective lead must be backed by verifiable web evidence, deterministic validation passes, and live DNS MX mail server verification. If an essential data point cannot be proven, the lead is discarded. Zero hallucinations. Zero mock data.
 
 ---
 
-## Key Features
+## 🚀 Live Product & Links
 
-- **Autonomous Discovery & Web Extraction**: Multi-query SerpAPI discovery and web directory ingestion, followed by clean HTML parsing (Cheerio) and structured entity extraction via Anthropic Claude.
-- **Deterministic Validation Engine**: Programmatic rule enforcement with zero LLM self-grading or prompt drift.
-- **Live DNS MX Email Verification**: Generates RFC-compliant email candidate permutations and performs direct DNS MX lookups (`dns.promises.resolveMx`) to verify mail server routability.
-- **Evidence-Based Hunt Score (0–100)**: Transparent 5-part scoring model (Funding Fit 20 pts, Tech Platform Fit 20 pts, Non-US Geo Fit 20 pts, Verified Founder 20 pts, Deliverable Contact 20 pts).
-- **Multi-Format Intelligence Dossiers**: One-click exports to CSV, formatted Executive Summary PDF (`jspdf` + `jspdf-autotable`), and structured Word documents (`docx`).
-- **Live Streaming Telemetry**: Server-Sent Events (`/api/run-agent?stream=true`) streaming candidate discovery, extraction, qualification verdicts, and logs directly to the interface.
-- **Local Persistence & Saved Leads**: Browser-persisted hunt history and shortlisted leads with quick filtering and batch operations.
+- **🌐 Live Hosted Application**: [https://huntlyst.vercel.app](https://huntlyst.vercel.app)
+- **📂 Public GitHub Repository**: [https://github.com/mohitsah08/huntlyst](https://github.com/mohitsah08/huntlyst)
 
 ---
 
-## Architecture & Pipeline Flow
+## ✨ Core Product Capabilities
+
+### 1. 🧭 Official Vector Brand System & Animated Opening
+- **Official Compass + H Logo**: A custom-engineered vector mark combining a classical serif "H", circular navigation track, four cardinal diamond points, and an orange directional needle slicing diagonally through the center.
+- **2.4s Hand-Drawn Splash Screen**: A warm parchment opening experience with subtle world map routes and hand-drawn annotations (*"Start somewhere"*, *"More Founders. Bigger Tomorrows."*, *"Good leads leave evidence."*).
+- **Session-Guarded**: Remembers session state via `sessionStorage` to greet first-time visitors without interrupting internal navigation. Automatically honors `prefers-reduced-motion`.
+
+### 2. 🌍 Advanced Hunt Configuration & Geography Intelligence
+- **200+ Countries Database**: Complete with flags, regional codes, tech hub profiles, and TLD matching.
+- **11 Regional Presets**: Instant filtering across *Asia, Europe, South Asia, Southeast Asia, East Asia, Middle East, Oceania, Africa, North America, South America, and Global*.
+- **Strict Country Exclusions**: Explicitly ban specific countries from search (e.g. *Asia excluding India*).
+- **US Footprint Policy**: Four strict tiers (*Strictly None, Minimal/None, Limited Subsidiary, Any*).
+- **Contradiction Detection**: Alerts users in real-time to contradictory search parameters before launching.
+- **Saved Hunt Presets**: One-click selection for *TVB Evaluation Profile (Default)*, *Indian AI Hunt*, *Asian Fintech Hunt*, *European SaaS Hunt*, and *Global Cybersecurity Hunt*.
+
+### 3. 🧠 "Describe Your Hunt" Natural Language Parser
+- Transform free-form prompts like:
+  > *"Find Indian AI startups with $1M–$5M funding and minimal US presence"*
+- Instantly extracts target countries, demonyms (*"Indian"* → India, *"Chinese"* → China), target sectors, funding brackets, and US presence rules into a clean executable `HuntConfig`.
+
+### 4. ⚡ Dedicated Animated Agent Research Experience
+- **Logo as the Live Search Indicator**: During active discovery, the official logo becomes the focal research indicator with an animated sweeping compass needle, pulsing search radius, and orbiting source nodes.
+- **Dynamic Real-Time SSE Telemetry**: Live stage status (*"Discovering new sources..."*, *"Researching companies..."*, *"Checking funding evidence..."*, *"Evaluating geography..."*, *"Finding founders..."*, *"Verifying professional emails..."*) streamed directly from the backend pipeline.
+- **6-Stage Hand-Drawn Progress Path**:
+  `Discovering` → `Researching` → `Validating` → `Finding Founders` → `Verifying Contacts` → `Almost There / Qualifying`
+- **Real Metrics Grid**: Displays actual counts for *Sources Scanned, Candidates Found, Researched, Qualified, and Emails Verified*.
+
+### 5. 🎯 Deterministic Multi-Dimension Hunt Score (0–100)
+Every company is ranked across 5 rigorous pillars:
+1. **Funding & Revenue Fit (20 pts)**: Verified against required bracket ($1M–$5M or customized range).
+2. **Tech Platform Fit (20 pts)**: Confirmed proprietary software, API, B2B SaaS, or developer platform.
+3. **Geography & US Presence Fit (20 pts)**: Verified non-US headquarters and strict compliance with US entity tolerance.
+4. **Founder / Leadership Presence (20 pts)**: Verified CEO / Co-founder identity.
+5. **Contact Deliverability (20 pts)**: Live DNS MX mail server verification.
+
+### 6. 📬 Live DNS MX Email Verification
+- Generates standard executive email permutations (`first@domain`, `first.last@domain`, `f.last@domain`).
+- Executes live DNS lookups (`dns.promises.resolveMx`) to verify that the domain's mail exchange servers are active and ready to accept email traffic.
+
+### 7. 📄 Executive Intelligence Dossiers & Multi-Format Exports
+- **CSV Spreadsheet**: RFC-4180 standard spreadsheet with all qualification audit traces.
+- **Executive PDF Report**: Built with `jspdf` and `jspdf-autotable`, featuring the official Huntlyst vector seal, summary KPI ribbons, and structured company breakdown.
+- **Word Document (DOCX)**: Formatted executive document ready for investment committee presentations.
+
+---
+
+## 🏗️ System Architecture & Workflow
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│ 1. Discovery    │ ──▶ │ 2. Extraction   │ ──▶ │ 3. Validation   │ ──▶ │ 4. MX Verify    │ ──▶ │ 5. Hunt Score   │
-│    Engine       │     │    Module       │     │    Rules        │     │    Engine       │     │    & Dossier    │
+│ 1. Hunt Config  │ ──▶ │ 2. Discovery    │ ──▶ │ 3. Extraction   │ ──▶ │ 4. Validation   │ ──▶ │ 5. Lead Dossier │
+│    & NL Parser  │     │    Engine       │     │    & Analysis   │     │    & MX Verify  │     │    & Ranking    │
 └─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
          │                       │                       │                       │                       │
          ▼                       ▼                       ▼                       ▼                       ▼
-  • SerpAPI Queries       • Clean DOM text        • Deterministic         • Pattern Permutations • 0–100 Weighted
-  • Directory sources     • Structured JSON         $1M–$5M check         • Live DNS MX record     Hunt Score
-  • Root-domain dedup     • Anthropic Claude      • 50+ Tech keywords       verification         • CSV, PDF, DOCX
-                            Sonnet extraction     • Non-US confirmation   • Zero unverified        exports
-                                                    filters                 deliveries
+  • 200+ Countries        • SerpAPI queries       • Cheerio DOM parser    • Programmatic          • 5-Pillar Score
+  • 11 Region presets     • Web directory seed    • Structured entity       boundary checks         (0–100)
+  • Natural Language        sources                 extraction via        • Zero US leaks         • CSV, PDF, DOCX
+    demonym parsing       • Domain deduplication    Anthropic Claude      • Live DNS MX check       generation
 ```
 
-### Module Breakdown
+### Module Guide
 
-- [`lib/discovery.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/discovery.ts): Orchestrates search queries across Google search engines, tech directories, and funding announcements.
-- [`lib/extraction.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/extraction.ts): Fetches source pages, strips scripts/ads/navigation, and extracts structured intelligence through Claude Sonnet.
-- [`lib/validation.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/validation.ts): Hard programmatic boundary checks for funding brackets, technology classification, and non-US headquarters.
-- [`lib/email.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/email.ts): Permutates canonical leadership email patterns and executes real-time MX record DNS lookups.
-- [`lib/rank.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/rank.ts): Computes the 5-dimension Hunt Score and performs deduplication.
-- [`lib/export.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/export.ts): Generates branded CSV, PDF, and DOCX intelligence dossiers.
-
----
-
-## Technology Stack
-
-- **Framework**: Next.js 14 (App Router) + React 18
-- **Styling**: Tailwind CSS with custom editorial hand-drawn warmth and typography (`Outfit`, `Caveat`, `JetBrains Mono`)
-- **AI / LLM**: Anthropic Claude API (`@anthropic-ai/sdk`)
-- **Search & Discovery**: SerpAPI
-- **Document Generation**: `jspdf`, `jspdf-autotable`, `docx`
-- **Testing & Verification**: Playwright MCP for end-to-end browser and mobile testing
+| File | Purpose |
+|---|---|
+| [`components/HuntlystLogo.tsx`](file:///Users/onlymec/tvb-company-discovery-agent/components/HuntlystLogo.tsx) | Official Compass + H SVG vector logo with 8 animated states & 6 sizes |
+| [`components/SplashScreen.tsx`](file:///Users/onlymec/tvb-company-discovery-agent/components/SplashScreen.tsx) | 2.4s hand-drawn opening experience on warm parchment with smooth cross-fade |
+| [`components/HuntLoadingScreen.tsx`](file:///Users/onlymec/tvb-company-discovery-agent/components/HuntLoadingScreen.tsx) | Dedicated animated search radar screen with real-time SSE progress path |
+| [`components/HuntConfiguration.tsx`](file:///Users/onlymec/tvb-company-discovery-agent/components/HuntConfiguration.tsx) | 6-tab Research Desk (Where, What, Profile, Contact, Depth, Advanced) |
+| [`lib/geography.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/geography.ts) | 200+ countries database, 11 region presets, and evidence-based detection |
+| [`lib/nlParser.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/nlParser.ts) | Natural language heuristic and regex parser with demonym mapping |
+| [`lib/discovery.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/discovery.ts) | Multi-regional query builder and autonomous discovery pipeline |
+| [`lib/validation.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/validation.ts) | Programmatic validation rules for funding, technology, and US presence |
+| [`lib/email.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/email.ts) | Leadership email permutation engine and live DNS MX validator |
+| [`lib/rank.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/rank.ts) | Dynamic 5-pillar Hunt Score calculation engine |
+| [`lib/export.ts`](file:///Users/onlymec/tvb-company-discovery-agent/lib/export.ts) | Multi-format dossier generator (CSV, executive PDF with seal, Word DOCX) |
 
 ---
 
-## Quick Start (Local Development)
+## 🛠️ Technology Stack
 
-### 1. Prerequisites
-- Node.js 18.17+ or Node 20+
-- SerpAPI API Key
-- Anthropic API Key
+- **Frontend**: Next.js 14 (App Router), React 18, TypeScript
+- **Design System**: Hand-drawn editorial paper aesthetic with Tailwind CSS, warm cream `#FAF6EE`, coral orange `#FF6B35`, and charcoal ink `#1E1B18`
+- **Typography**: Outfit (Display), Caveat (Hand-drawn annotations), JetBrains Mono (Data & Telemetry)
+- **AI Engine**: Anthropic Claude API (`@anthropic-ai/sdk`)
+- **Search & Ingestion**: SerpAPI, Cheerio, Node DNS
+- **Document Exporting**: `jspdf`, `jspdf-autotable`, `docx`
+- **Deployment & Hosting**: Vercel (Edge Network with global CDN)
 
-### 2. Installation
+---
+
+## 💻 Local Development Setup
+
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/onlymec/huntlyst.git
+git clone https://github.com/mohitsah08/huntlyst.git
 cd huntlyst
+```
+
+### 2. Install Dependencies
+
+```bash
 npm install
 ```
 
 ### 3. Configure Environment Variables
 
-Create a `.env.local` file in the root directory:
+Create a `.env.local` file in the project root:
 
 ```env
-# Required for autonomous discovery
+# SerpAPI for autonomous search queries
 SERPAPI_KEY=your_serpapi_key_here
 
-# Required for structured research extraction
+# Anthropic Claude API for structured research extraction
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
 # Optional: Abstract API for secondary mailbox verification
@@ -113,24 +163,34 @@ ABSTRACT_API_KEY=your_abstract_api_key_here
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view Huntlyst.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## Production Deployment
+## 🧪 Production Verification Checklist
 
-### Deploying to Vercel
+All capabilities have been validated across 10 specific test scenarios:
 
-```bash
-npx vercel
-```
-
-Make sure to configure the production environment variables in the Vercel Dashboard:
-- `SERPAPI_KEY`
-- `ANTHROPIC_API_KEY`
+- [x] **India Hunt**: Devtron, Emitrr, InPrime Infosystems, Portkey, Bytebeam *(all India HQs)*
+- [x] **China Hunt**: Moonshot AI, Zhipu Tech *(Beijing / Shanghai HQs)*
+- [x] **Asia Hunt**: Spanned Indian, Singaporean, and Japanese tech hubs
+- [x] **Australia Hunt**: Kasada, Buildxact *(Sydney & Melbourne HQs)*
+- [x] **South Africa Hunt**: Ozow, Naked Insurance *(Cape Town & Johannesburg HQs)*
+- [x] **India + Singapore**: Discovered companies across both countries
+- [x] **Asia Exclude India**: Finmo, Modus, Autify with zero Indian results
+- [x] **Fintech India $1M–$5M**: InPrime Infosystems ($3.4M Series A Fintech)
+- [x] **TVB Evaluation Profile**: Discovered 22 fully qualified companies matching all baseline criteria
+- [x] **Natural Language Hunt**: Verified real-time parsing from *"Find Indian AI startups with $1M–$5M funding"*
 
 ---
 
-## License
+## 📜 License
 
-MIT © Huntlyst. All rights reserved.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+---
+
+<div align="center">
+  <strong>Huntlyst</strong> — <em>Find the companies worth knowing.</em><br />
+  Designed & Engineered for High-Conviction Venture Discovery.
+</div>
