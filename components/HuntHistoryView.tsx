@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { RunHistoryItem, CompanyRecord } from '@/lib/types';
 import { downloadCsvFile, downloadPdfFile, downloadDocxFile } from '@/lib/export';
+import HuntlystLogo from './HuntlystLogo';
 
 interface HuntHistoryViewProps {
   history: RunHistoryItem[];
@@ -75,7 +76,9 @@ export default function HuntHistoryView({
       {/* History Items List */}
       {history.length === 0 ? (
         <div className="paper-card bg-[#FFFDF9] rounded-2xl p-12 text-center border-2 border-[#1E1B18] shadow-sketch-sm space-y-4">
-          <div className="text-4xl">🏹</div>
+          <div className="flex justify-center mx-auto">
+            <HuntlystLogo size="lg" state="idle" showWordmark={false} />
+          </div>
           <div className="space-y-1">
             <h3 className="font-display text-2xl font-bold text-[#1E1B18]">
               Nothing hunted yet.

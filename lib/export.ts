@@ -126,15 +126,26 @@ export function downloadPdfFile(companies: CompanyRecord[], filename = 'huntlyst
   doc.setFillColor(inkDark[0], inkDark[1], inkDark[2]);
   doc.rect(14, 14, 182, 28, 'F');
 
+  // Small Compass + H Emblem in PDF header
+  doc.setFillColor(paperCream[0], paperCream[1], paperCream[2]);
+  doc.circle(24, 28, 6, 'F');
+  doc.setDrawColor(primaryOrange[0], primaryOrange[1], primaryOrange[2]);
+  doc.setLineWidth(0.6);
+  doc.circle(24, 28, 4.5, 'S');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
+  doc.setFontSize(8);
+  doc.setTextColor(inkDark[0], inkDark[1], inkDark[2]);
+  doc.text('H', 22.8, 30.5);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
   doc.setTextColor(255, 255, 255);
-  doc.text('HUNTLYST COMPANY DISCOVERY REPORT', 20, 26);
+  doc.text('HUNTLYST RESEARCH DOSSIER', 34, 26);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(primaryOrange[0], primaryOrange[1], primaryOrange[2]);
-  doc.text('Qualified company intelligence • Autonomous research & verification', 20, 34);
+  doc.text('Find the companies worth knowing • Autonomous Lead Intelligence', 34, 33);
 
   // Metadata ribbon
   const now = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });

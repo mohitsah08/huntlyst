@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { CompanyRecord } from '@/lib/types';
 import { downloadCsvFile, downloadPdfFile, downloadDocxFile } from '@/lib/export';
 import { calculateHuntScore } from '@/lib/rank';
+import HuntlystLogo from './HuntlystLogo';
 
 interface SavedLeadsViewProps {
   savedLeads: CompanyRecord[];
@@ -224,8 +225,8 @@ export default function SavedLeadsView({
       {/* Empty State (Section 22) */}
       {savedLeads.length === 0 ? (
         <div className="paper-card bg-[#FFFDF9] rounded-2xl p-10 sm:p-14 text-center border-2 border-[#1E1B18] shadow-sketch-sm space-y-4 max-w-xl mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-[#FFE7DC] border-2 border-[#1E1B18] flex items-center justify-center text-3xl mx-auto shadow-sketch-sm">
-            ⭐
+          <div className="flex justify-center mx-auto">
+            <HuntlystLogo size="lg" state="idle" showWordmark={false} />
           </div>
           <div className="space-y-1">
             <h3 className="font-display text-2xl font-bold text-[#1E1B18]">

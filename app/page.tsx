@@ -16,6 +16,8 @@ import { downloadCsvFile, downloadPdfFile, downloadDocxFile } from '@/lib/export
 
 // Modular Subviews & Components
 import HuntlystLogo from '@/components/HuntlystLogo';
+import SplashScreen from '@/components/SplashScreen';
+import HuntLoadingScreen from '@/components/HuntLoadingScreen';
 import ExportModal from '@/components/ExportModal';
 import LeadDetailModal from '@/components/LeadDetailModal';
 import SettingsView from '@/components/SettingsView';
@@ -129,6 +131,11 @@ export default function HomePage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
+  // Splash Screen State (Session-guarded)
+  const [showSplash, setShowSplash] = useState<boolean>(false);
+  const [activeHuntConfig, setActiveHuntConfig] = useState<HuntConfig>(TVB_EVALUATION_CONFIG);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   // Confirmation Modal
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -141,6 +148,23 @@ export default function HomePage() {
     message: '',
     onConfirm: () => {},
   });
+
+  // Check splash screen on mount
+  useEffect(() => {
+    try {
+      const shown = sessionStorage.getItem('huntlyst_splash_shown');
+      if (!shown) {
+        setShowSplash(true);
+      }
+    } catch {}
+  }, []);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    try {
+      sessionStorage.setItem('huntlyst_splash_shown', 'true');
+    } catch {}
+  };
 
   // Load saved state on mount
   useEffect(() => {
@@ -231,8 +255,10 @@ export default function HomePage() {
 
   // Start Real Discovery Pipeline (Section 8)
   const handleStartHunt = async (huntConfig?: HuntConfig) => {
-    setStatus('running');
     const activeCfg = huntConfig || TVB_EVALUATION_CONFIG;
+    setActiveHuntConfig(activeCfg);
+    setErrorMessage(null);
+    setStatus('running');
     const targetDisplay = activeCfg.geography.countries.length > 0
       ? activeCfg.geography.countries.join(', ')
       : activeCfg.geography.regions.length > 0
@@ -346,6 +372,7 @@ export default function HomePage() {
       }
     } catch (err: any) {
       setStatus('error');
+      setErrorMessage(err.message || 'Pipeline execution failed.');
       setStatusMessage('Hunt paused due to an error.');
       showToast(`Error: ${err.message || 'Pipeline execution failed.'}`);
     }
@@ -465,6 +492,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#FAF6EE] text-[#1E1B18] flex flex-col font-sans selection:bg-[#FFE7DC] selection:text-[#FF6B35]">
+      {/* Intro / Splash Screen on initial application startup */}
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-[#1E1B18] text-[#FAF6EE] px-4 py-3 rounded-2xl shadow-sketch-lg border-2 border-[#1E1B18] text-xs font-mono font-bold animate-in fade-in slide-in-from-bottom duration-150">
@@ -1043,9 +1073,30 @@ export default function HomePage() {
                 )}
               </div>
 
-              {!results || results.companies.length === 0 ? (
+              {status === 'running' ? (
+                <HuntLoadingScreen
+                  config={activeHuntConfig}
+                  currentStep={currentProgressIndex}
+                  currentMessage={statusMessage}
+                  candidatesFound={totalDiscovered}
+                  qualifiedCount={totalQualified}
+                  onViewResults={() => {}}
+                />
+              ) : status === 'error' ? (
+                <HuntLoadingScreen
+                  config={activeHuntConfig}
+                  currentStep={currentProgressIndex}
+                  currentMessage={statusMessage}
+                  candidatesFound={totalDiscovered}
+                  qualifiedCount={totalQualified}
+                  errorMessage={errorMessage}
+                  onRetry={() => handleStartHunt(activeHuntConfig)}
+                />
+              ) : !results || results.companies.length === 0 ? (
                 <div className="paper-card bg-[#FFFDF9] rounded-2xl p-12 text-center border-2 border-[#1E1B18] shadow-sketch-sm space-y-4">
-                  <div className="text-4xl">🔍</div>
+                  <div className="flex justify-center mx-auto">
+                    <HuntlystLogo size="lg" state="idle" showWordmark={false} />
+                  </div>
                   <div className="space-y-1">
                     <h3 className="font-display text-2xl font-bold text-[#1E1B18]">
                       No qualified companies found.
