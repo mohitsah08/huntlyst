@@ -18,23 +18,23 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       const timer = setTimeout(() => {
         setIsExiting(true);
         setTimeout(onComplete, 400);
-      }, 600);
+      }, 500);
       return () => clearTimeout(timer);
     }
 
-    // Hand-drawn sequential timing orchestration (Total ~2.4s)
-    const t2 = setTimeout(() => setStep(2), 200);   // Sketch ticks
-    const t3 = setTimeout(() => setStep(3), 400);   // Compass ring
-    const t4 = setTimeout(() => setStep(4), 700);   // H reveal
-    const t5 = setTimeout(() => setStep(5), 900);   // Orange needle sweep
-    const t6 = setTimeout(() => setStep(6), 1200);  // Logo complete & settle
-    const t7 = setTimeout(() => setStep(7), 1400);  // Huntlyst wordmark
-    const t8 = setTimeout(() => setStep(8), 1700);  // Orange brush underline
-    const t9 = setTimeout(() => setStep(9), 1900);  // Taglines
+    // Silky smooth, organic pacing (Total duration ~4.2s with generous breathing room)
+    const t2 = setTimeout(() => setStep(2), 400);   // Sketch ticks & top annotations
+    const t3 = setTimeout(() => setStep(3), 900);   // Compass ring & sticky notes
+    const t4 = setTimeout(() => setStep(4), 1450);  // Central H ink reveal & spikes
+    const t5 = setTimeout(() => setStep(5), 1950);  // Orange directional needle sweep
+    const t6 = setTimeout(() => setStep(6), 2450);  // Complete logo settle & glow
+    const t7 = setTimeout(() => setStep(7), 2800);  // Huntlyst wordmark glide in
+    const t8 = setTimeout(() => setStep(8), 3200);  // Orange brush underline draw
+    const t9 = setTimeout(() => setStep(9), 3500);  // Taglines & bottom annotations
     const t10 = setTimeout(() => {
       setIsExiting(true);
-      setTimeout(onComplete, 550); // Smooth exit animation
-    }, 2450);
+      setTimeout(onComplete, 950); // Luxury 950ms cross-fade exit
+    }, 4400);
 
     return () => {
       clearTimeout(t2);
@@ -51,47 +51,51 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
   const handleSkip = () => {
     setIsExiting(true);
-    setTimeout(onComplete, 250);
+    setTimeout(onComplete, 350);
   };
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#FAF6EE] overflow-hidden transition-all duration-500 select-none ${
-        isExiting ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-100'
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#FAF6EE] overflow-hidden select-none transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        isExiting
+          ? 'opacity-0 scale-[0.98] blur-[2px] pointer-events-none'
+          : 'opacity-100 scale-100 blur-0'
       }`}
       style={{
         backgroundImage: `
-          radial-gradient(circle at 50% 50%, rgba(255,253,249,0.95) 0%, rgba(250,246,238,0.92) 55%, rgba(30,27,24,0.18) 100%),
-          repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(30,27,24,0.015) 2px, rgba(30,27,24,0.015) 4px)
+          radial-gradient(circle at 50% 50%, rgba(255,253,249,0.98) 0%, rgba(250,246,238,0.95) 50%, rgba(30,27,24,0.14) 100%),
+          repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(30,27,24,0.012) 2px, rgba(30,27,24,0.012) 4px)
         `,
       }}
     >
       {/* Dark charcoal vignette edge treatment mirroring reference image */}
-      <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-multiply bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(30,27,24,0.85)_100%)]" />
+      <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-multiply bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(30,27,24,0.85)_100%)] transition-opacity duration-1000" />
 
       {/* Subtle background world map routes (faint dots & curves) */}
       <svg
-        className="absolute inset-0 w-full h-full pointer-events-none opacity-25"
+        className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-1000 ease-out ${
+          step >= 2 ? 'opacity-30' : 'opacity-0'
+        }`}
         xmlns="http://www.w3.org/2000/svg"
       >
-        <g stroke="#766E65" strokeWidth="1" strokeDasharray="4 6" fill="none">
+        <g stroke="#766E65" strokeWidth="1.2" strokeDasharray="5 7" fill="none">
           <path d="M 120 280 Q 320 210, 520 260 T 960 220 T 1380 290" />
           <path d="M 220 540 Q 560 480, 840 560 T 1280 500" />
           <path d="M 400 160 Q 720 320, 1020 180" />
         </g>
-        {/* Faint route hubs */}
-        <circle cx="320" cy="210" r="3" fill="#FF6B35" opacity="0.6" />
-        <circle cx="520" cy="260" r="3.5" fill="#FF6B35" opacity="0.8" />
-        <circle cx="960" cy="220" r="3" fill="#FF6B35" opacity="0.6" />
-        <circle cx="840" cy="560" r="3.5" fill="#FF6B35" opacity="0.8" />
+        {/* Route hubs */}
+        <circle cx="320" cy="210" r="3.5" fill="#FF6B35" opacity="0.7" />
+        <circle cx="520" cy="260" r="4" fill="#FF6B35" opacity="0.85" />
+        <circle cx="960" cy="220" r="3.5" fill="#FF6B35" opacity="0.7" />
+        <circle cx="840" cy="560" r="4" fill="#FF6B35" opacity="0.85" />
       </svg>
 
       {/* Hand-drawn editorial annotations & sketches mirroring reference image */}
       <div className="absolute inset-0 max-w-6xl mx-auto pointer-events-none hidden md:block">
         {/* Top-left: "Start somewhere" */}
         <div
-          className={`absolute top-16 left-16 transition-opacity duration-700 ${
-            step >= 2 ? 'opacity-90' : 'opacity-0'
+          className={`absolute top-16 left-16 transition-all duration-1000 ease-out ${
+            step >= 2 ? 'opacity-90 translate-y-0' : 'opacity-0 -translate-y-2'
           }`}
         >
           <span className="font-serif italic text-sm text-[#766E65]">Start somewhere</span>
@@ -102,8 +106,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
         {/* Sticky note left: "More Founders. Bigger Tomorrows." */}
         <div
-          className={`absolute top-44 left-8 transition-all duration-700 -rotate-3 ${
-            step >= 3 ? 'opacity-95 translate-y-0' : 'opacity-0 translate-y-2'
+          className={`absolute top-44 left-8 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            step >= 3 ? 'opacity-95 translate-y-0 rotate-[-3deg]' : 'opacity-0 translate-y-4 rotate-0'
           }`}
         >
           <div className="relative bg-[#FFF2DE] p-4 rounded-md shadow-md border border-[#E8DAC2] w-40 text-xs font-serif leading-snug text-[#1E1B18]">
@@ -115,8 +119,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
         {/* Lower-left: "Discover Opportunities" */}
         <div
-          className={`absolute bottom-36 left-28 transition-opacity duration-700 ${
-            step >= 4 ? 'opacity-85' : 'opacity-0'
+          className={`absolute bottom-36 left-28 transition-all duration-1000 ease-out ${
+            step >= 4 ? 'opacity-85 translate-y-0' : 'opacity-0 translate-y-3'
           }`}
         >
           <span className="font-serif italic text-sm text-[#766E65]">Discover Opportunities</span>
@@ -127,8 +131,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
         {/* Top-right: "Explore Global Potential" */}
         <div
-          className={`absolute top-16 right-24 text-right transition-opacity duration-700 ${
-            step >= 2 ? 'opacity-90' : 'opacity-0'
+          className={`absolute top-16 right-24 text-right transition-all duration-1000 ease-out ${
+            step >= 2 ? 'opacity-90 translate-y-0' : 'opacity-0 -translate-y-2'
           }`}
         >
           <span className="font-serif italic text-sm text-[#766E65]">Explore Global Potential</span>
@@ -139,8 +143,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
         {/* Sticky note right: "Ideas to Impact." */}
         <div
-          className={`absolute top-48 right-12 transition-all duration-700 rotate-2 ${
-            step >= 3 ? 'opacity-95 translate-y-0' : 'opacity-0 translate-y-2'
+          className={`absolute top-48 right-12 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            step >= 3 ? 'opacity-95 translate-y-0 rotate-[2deg]' : 'opacity-0 translate-y-4 rotate-0'
           }`}
         >
           <div className="relative bg-[#FFF8ED] p-3.5 rounded-md shadow-md border border-[#E8DAC2] w-36 text-xs font-serif text-[#1E1B18]">
@@ -151,37 +155,41 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
         {/* Mid-right annotation: "Build What's Next" */}
         <div
-          className={`absolute bottom-44 right-32 text-right transition-opacity duration-700 ${
-            step >= 5 ? 'opacity-85' : 'opacity-0'
+          className={`absolute bottom-44 right-32 text-right transition-all duration-1000 ease-out ${
+            step >= 5 ? 'opacity-85 translate-x-0' : 'opacity-0 translate-x-3'
           }`}
         >
           <span className="font-serif italic text-sm text-[#766E65]">Build What's Next</span>
         </div>
 
         {/* Bottom signpost sketch in corner */}
-        <div className="absolute bottom-6 right-8 opacity-70 pointer-events-none">
-          <div className="border border-[#766E65] px-2 py-0.5 text-[9px] font-mono tracking-widest text-[#766E65] bg-[#FAF6EE] rounded shadow-sm">
+        <div
+          className={`absolute bottom-6 right-8 transition-opacity duration-1000 ${
+            step >= 6 ? 'opacity-75' : 'opacity-0'
+          }`}
+        >
+          <div className="border border-[#766E65] px-2.5 py-1 text-[9px] font-mono tracking-widest text-[#766E65] bg-[#FAF6EE] rounded shadow-sm">
             EXPLORE • DISCOVER • BUILD
           </div>
         </div>
 
         {/* Bottom annotation: "Good leads leave evidence." */}
         <div
-          className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-opacity duration-700 ${
-            step >= 8 ? 'opacity-90' : 'opacity-0'
+          className={`absolute bottom-8 left-1/2 -translate-x-1/2 text-center transition-all duration-1000 ease-out ${
+            step >= 8 ? 'opacity-90 translate-y-0' : 'opacity-0 translate-y-2'
           }`}
         >
           <span className="font-serif italic text-xs text-[#766E65]">
             Good leads leave evidence.
           </span>
-          <div className="h-0.5 w-full bg-[#FF6B35] opacity-50 mt-0.5 rounded-full" />
+          <div className="h-0.5 w-full bg-[#FF6B35] opacity-50 mt-1 rounded-full" />
         </div>
       </div>
 
       {/* Central Interactive Hero Intro Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-xl mx-auto">
-        {/* Animated Huntlyst Logo Emblem */}
-        <div className="relative mb-6">
+        {/* Animated Huntlyst Logo Emblem with Butter-Smooth Timing */}
+        <div className="relative mb-6 transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]">
           <HuntlystLogo
             size="2xl"
             variant="orange-black"
@@ -200,8 +208,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
         {/* Wordmark "Huntlyst" */}
         <div
-          className={`transition-all duration-700 ease-out ${
-            step >= 7 ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-95'
+          className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            step >= 7 ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
           }`}
         >
           <div className="flex items-baseline justify-center gap-1">
@@ -213,9 +221,10 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
           {/* Orange brush underline */}
           <div
-            className={`w-48 sm:w-64 h-2 mx-auto mt-1 transition-all duration-700 ${
+            className={`w-48 sm:w-64 h-2 mx-auto mt-1 transition-all duration-800 ease-out ${
               step >= 8 ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'
             }`}
+            style={{ transformOrigin: 'left center' }}
           >
             <svg viewBox="0 0 240 8" fill="none" className="w-full h-full">
               <path
@@ -230,8 +239,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
         {/* Taglines */}
         <div
-          className={`mt-4 space-y-1.5 transition-all duration-700 delay-100 ${
-            step >= 9 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+          className={`mt-4 space-y-1.5 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            step >= 9 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
           }`}
         >
           <p className="font-serif italic text-lg sm:text-xl text-[#1E1B18] font-medium tracking-wide">
@@ -242,14 +251,14 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
           </p>
         </div>
 
-        {/* Mini progress cue indicating smooth transition to dashboard */}
+        {/* Ambient progress indicator showing smooth transition */}
         <div
-          className={`mt-8 transition-opacity duration-500 ${
+          className={`mt-8 transition-opacity duration-700 ease-out ${
             step >= 9 ? 'opacity-100' : 'opacity-0'
           }`}
         >
           <div className="w-32 h-1 bg-[#E8DAC2] rounded-full overflow-hidden mx-auto">
-            <div className="h-full bg-[#FF6B35] animate-[shimmer_1.2s_infinite] w-full" />
+            <div className="h-full bg-[#FF6B35] animate-[shimmer_1.4s_infinite] w-full" />
           </div>
         </div>
       </div>
@@ -258,7 +267,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       <button
         type="button"
         onClick={handleSkip}
-        className="absolute bottom-6 right-6 z-20 text-xs font-mono font-bold text-[#766E65] hover:text-[#1E1B18] bg-[#FFFDF9] hover:bg-[#FFE7DC] px-3 py-1.5 rounded-lg border border-[#E8DAC2] shadow-sm transition-colors"
+        className="absolute bottom-6 right-6 z-20 text-xs font-mono font-bold text-[#766E65] hover:text-[#1E1B18] bg-[#FFFDF9]/90 hover:bg-[#FFE7DC] px-3.5 py-1.5 rounded-lg border border-[#E8DAC2] shadow-sm transition-all duration-300 hover:scale-105"
       >
         Skip intro ➔
       </button>

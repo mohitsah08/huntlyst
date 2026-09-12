@@ -142,10 +142,10 @@ export default function HuntlystLogo({
             strokeLinecap="round"
             className={
               isIntro
-                ? 'animate-in fade-in zoom-in-75 duration-500 delay-200'
+                ? 'animate-in fade-in zoom-in-75 duration-1000 ease-out'
                 : isSearching
                 ? 'animate-pulse'
-                : ''
+                : 'transition-opacity duration-700'
             }
             opacity={isError ? 0.4 : 0.9}
           >
@@ -173,10 +173,10 @@ export default function HuntlystLogo({
             opacity="0.95"
             className={
               isIntro
-                ? 'transition-all duration-700 ease-out delay-300'
+                ? 'transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]'
                 : isSearching
-                ? 'animate-[spin_12s_linear_infinite]'
-                : ''
+                ? 'animate-[spin_16s_linear_infinite]'
+                : 'transition-all duration-700'
             }
             style={{ transformOrigin: '100px 100px' }}
           />
@@ -194,7 +194,7 @@ export default function HuntlystLogo({
           />
 
           {/* 3. Charcoal Cardinal Diamond Spikes (North, South, West, East) */}
-          <g fill={colors.primaryInk} className={isIntro ? 'animate-in fade-in duration-500 delay-500' : ''}>
+          <g fill={colors.primaryInk} className={isIntro ? 'animate-in fade-in duration-1000 ease-out' : 'transition-opacity duration-700'}>
             {/* North Spike (Taller, prominent) */}
             <polygon points="100,16 94,62 100,56 106,62" />
             {/* South Spike */}
@@ -210,8 +210,8 @@ export default function HuntlystLogo({
             fill={colors.primaryInk}
             className={
               isIntro
-                ? 'animate-in zoom-in-90 fade-in duration-700 delay-700'
-                : ''
+                ? 'animate-in zoom-in-95 fade-in duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]'
+                : 'transition-all duration-700'
             }
           >
             {/* Left Serif Stem */}
@@ -224,7 +224,7 @@ export default function HuntlystLogo({
 
           {/* 5. Diagonal Orange Directional Compass Needle Slicing Through the H */}
           <g
-            className={`transition-transform duration-700 ${
+            className={`transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               isSearching
                 ? 'animate-[spin_4s_ease-in-out_infinite]'
                 : isVerifying
@@ -234,7 +234,7 @@ export default function HuntlystLogo({
                 : isError
                 ? 'rotate-45'
                 : isIntro
-                ? 'animate-in zoom-in-75 duration-700 delay-900'
+                ? 'animate-in zoom-in-75 duration-1000'
                 : ''
             }`}
             style={{ transformOrigin: '100px 100px' }}

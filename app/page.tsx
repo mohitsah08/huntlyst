@@ -131,8 +131,8 @@ export default function HomePage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
-  // Splash Screen State (Session-guarded)
-  const [showSplash, setShowSplash] = useState<boolean>(false);
+  // Splash Screen State (Session-guarded, defaults to true to prevent initial dashboard flash)
+  const [showSplash, setShowSplash] = useState<boolean>(true);
   const [activeHuntConfig, setActiveHuntConfig] = useState<HuntConfig>(TVB_EVALUATION_CONFIG);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -149,14 +149,16 @@ export default function HomePage() {
     onConfirm: () => {},
   });
 
-  // Check splash screen on mount
+  // Check splash screen on mount: if already shown in this session, dismiss immediately
   useEffect(() => {
     try {
       const shown = sessionStorage.getItem('huntlyst_splash_shown');
-      if (!shown) {
-        setShowSplash(true);
+      if (shown) {
+        setShowSplash(false);
       }
-    } catch {}
+    } catch {
+      setShowSplash(false);
+    }
   }, []);
 
   const handleSplashComplete = () => {
