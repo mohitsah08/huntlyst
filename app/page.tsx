@@ -718,6 +718,8 @@ export default function HomePage() {
               })}
             </nav>
 
+            <a href="/external" className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border-[1.8px] border-[#2C2724] bg-[#FFF0E8] text-[#B94920] hover:bg-[#FFE7DC] text-xs font-bold shadow-[1px_2px_0px_#2C2724]"><span className="text-base">↗</span><span>External Research</span><span className="ml-auto text-[9px] font-mono">NEW</span></a>
+
             {/* Decorative Compass Mark */}
             <div className="hidden md:flex flex-col items-center pt-4 text-center">
               <svg
