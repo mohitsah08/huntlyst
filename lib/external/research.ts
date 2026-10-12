@@ -91,7 +91,7 @@ export async function researchExternal(input: { companyName?: string; url?: stri
 Keep sourceUrl values grounded in supplied URLs. Include only public professional contact information. Do not say an email is verified just because it is published. Amounts are numeric in their original currency. Date today: ${stamp().slice(0,10)}.
 SOURCE MATERIAL:
 ${sources}`;
-  const completion = await client.messages.create({ model: process.env.ANTHROPIC_MODEL || 'claude-3-7-sonnet-20250219', max_tokens: 6500, messages: [{ role: 'user', content: prompt }] });
+  const completion = await client.messages.create({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5-20250929', max_tokens: 6500, messages: [{ role: 'user', content: prompt }] });
   const raw = completion.content.filter((x: any) => x.type === 'text').map((x: any) => x.text).join('\n');
   const d = parseJson(raw);
   const evidence: Evidence[] = pages.map((p: any) => ({ field: 'source page', sourceUrl: p.url, sourceTitle: p.title, excerpt: p.markdown.slice(0, 320).replace(/\s+/g, ' '), retrievedAt: stamp() }));
